@@ -1,5 +1,5 @@
 import React from 'react'
-import Section01 from './components/Section01/Section01'
+import Section01 from './Components/Section01/Section01'
 import Section02 from './Components/Section02/Section02'
 import Footer from "./Components/Footer";
 
