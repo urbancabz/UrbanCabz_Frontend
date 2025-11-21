@@ -1,8 +1,10 @@
+// src/Model/Login_SignUp_Model.jsx
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function Login_SignUp_Model({ onClose }) {
+export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const [isLogin, setIsLogin] = useState(true);
+  const isBusiness = variant === "business";
 
   return (
     <div
@@ -23,6 +25,7 @@ export default function Login_SignUp_Model({ onClose }) {
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-white/80 hover:text-white text-2xl z-10"
+          aria-label="Close dialog"
         >
           ×
         </button>
@@ -35,7 +38,7 @@ export default function Login_SignUp_Model({ onClose }) {
               isLogin ? "bg-yellow-400 text-gray-900 shadow-md" : "bg-white/10 text-white hover:bg-white/20"
             }`}
           >
-            Login
+            {isBusiness ? "Business Login" : "Login"}
           </button>
           <button
             onClick={() => setIsLogin(false)}
@@ -43,7 +46,7 @@ export default function Login_SignUp_Model({ onClose }) {
               !isLogin ? "bg-yellow-400 text-gray-900 shadow-md" : "bg-white/10 text-white hover:bg-white/20"
             }`}
           >
-            Sign Up
+            {isBusiness ? "Business Sign Up" : "Sign Up"}
           </button>
         </div>
 
@@ -64,10 +67,24 @@ export default function Login_SignUp_Model({ onClose }) {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.32, ease: "easeInOut" }}
               >
-                <h2 className="text-2xl font-semibold text-center mb-5">Welcome Back</h2>
+                <h2 className="text-2xl font-semibold text-center mb-5">
+                  {isBusiness ? "Business Login" : "Welcome Back"}
+                </h2>
+
+                {/* Business-only field */}
+                {isBusiness && (
+                  <div className="mb-4">
+                    <label className="block text-sm text-white/85 mb-1">Company ID</label>
+                    <input
+                      type="text"
+                      placeholder="Your Company ID"
+                      className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                    />
+                  </div>
+                )}
 
                 <div className="mb-4">
-                  <label className="block text-sm text-white/85 mb-1">Email</label>
+                  <label className="block text-sm text-white/85 mb-1">{isBusiness ? "Business Email" : "Email"}</label>
                   <input
                     type="email"
                     placeholder="you@example.com"
@@ -89,7 +106,7 @@ export default function Login_SignUp_Model({ onClose }) {
                 </div>
 
                 <button className="w-full py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl shadow-sm hover:bg-yellow-300 transition">
-                  Login
+                  {isBusiness ? "Business Login" : "Login"}
                 </button>
               </motion.div>
             ) : (
@@ -102,25 +119,60 @@ export default function Login_SignUp_Model({ onClose }) {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.32, ease: "easeInOut" }}
               >
-                <h2 className="text-2xl font-semibold text-center mb-5">Create Account</h2>
+                <h2 className="text-2xl font-semibold text-center mb-5">
+                  {isBusiness ? "Create Business Account" : "Create Account"}
+                </h2>
 
-                <div className="mb-3">
-                  <label className="block text-sm text-white/85 mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
-                  />
-                </div>
+                {isBusiness ? (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">Company Name</label>
+                      <input
+                        type="text"
+                        placeholder="ACME Pvt Ltd"
+                        className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      />
+                    </div>
 
-                <div className="mb-3">
-                  <label className="block text-sm text-white/85 mb-1">Mobile Number</label>
-                  <input
-                    type="tel"
-                    placeholder="+91 9XXXXXXXXX"
-                    className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
-                  />
-                </div>
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">Company Email</label>
+                      <input
+                        type="email"
+                        placeholder="company@example.com"
+                        className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">GST / Registration No. (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="GSTIN / Reg No."
+                        className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="John Doe"
+                        className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">Mobile Number</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 9XXXXXXXXX"
+                        className="w-full px-4 py-3 rounded-xl bg-white/16 border border-white/25 text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="mb-3">
                   <label className="block text-sm text-white/85 mb-1">Email</label>
@@ -141,7 +193,7 @@ export default function Login_SignUp_Model({ onClose }) {
                 </div>
 
                 <button className="w-full py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl shadow-sm hover:bg-yellow-300 transition">
-                  Sign Up
+                  {isBusiness ? "Create Business Account" : "Sign Up"}
                 </button>
               </motion.div>
             )}

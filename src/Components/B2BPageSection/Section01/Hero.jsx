@@ -26,7 +26,7 @@ export default function HeroFullCover({
       />
 
       {/* Dark gradient overlay to ensure legibility */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/45 -z-5" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/35 to-black/45 -z-5" />
 
       {/* Optional soft vignette to focus center */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
@@ -71,19 +71,6 @@ export default function HeroFullCover({
           transition={{ delay: 0.18, duration: 0.6 }}
           className="mt-6 flex justify-center gap-3 flex-wrap"
         >
-          <a
-            href={primaryCta.href}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-yellow-400 text-gray-900 font-semibold shadow-lg hover:bg-yellow-300 focus:outline-none focus:ring-4 focus:ring-yellow-300/40"
-          >
-            {primaryCta.label}
-          </a>
-
-          <a
-            href={secondaryCta.href}
-            className="inline-flex items-center gap-2 px-4 py-3 rounded-full bg-white/10 text-white hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/10"
-          >
-            {secondaryCta.label}
-          </a>
         </motion.div>
         
       </div>
