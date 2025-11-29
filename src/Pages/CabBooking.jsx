@@ -60,14 +60,14 @@ export default function CabBooking() {
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="
-  bg-gray-900/95 
-  text-white 
-  rounded-2xl 
-  p-6 mb-6 
-  shadow-xl 
-  border border-gray-700
-">
-  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          bg-gray-900/95 
+          text-white 
+          rounded-2xl 
+          p-6 mb-6 
+          shadow-xl 
+          border border-gray-700
+        ">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
     {/* Left — ride info */}
     <div className="space-y-1">

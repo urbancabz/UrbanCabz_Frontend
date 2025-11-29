@@ -1,5 +1,6 @@
 // src/Components/CabBooking/CabListingCard.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
   const {
@@ -31,15 +32,21 @@ export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
   const originalPrice = price > 0 ? Math.round(price * 1.15) : 0;
   const discountPercent = 13;
 
+  const navigate = useNavigate();
+
   const onBookNow = () => {
-    alert(
-      `Booking Details:\n` +
-      `Car: ${name}\n` +
-      `From: ${from}\n` +
-      `To: ${to}\n` +
-      `Distance: ${distanceKm ? `${distanceKm} km` : 'Calculating...'}\n` +
-      `Price: ₹${price.toLocaleString()}`
-    );
+    // navigate to details page with all relevant info so CabBookingDetails is fully populated
+    navigate("/cab-booking-details", {
+      state: {
+        listing,
+        from,
+        to,
+        distanceKm,
+        // if you have pickup date/time available at parent, pass them in as well
+        pickupDate: undefined,
+        pickupTime: undefined,
+      },
+    });
   };
 
   return (
