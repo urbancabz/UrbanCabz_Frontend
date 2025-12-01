@@ -1,7 +1,7 @@
 // src/services/authService.js
 
 // Configure your backend API URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 /**
  * Customer Login
@@ -14,14 +14,14 @@ export async function customerLogin(credentials) {
     password: credentials.password,
   };
 
-  console.log(' Customer Login Request:', {
-    url: `${API_BASE_URL}/auth/login`,
+  console.log('🔵 Customer Login Request:', {
+    url: `${API_BASE_URL}/auth/customer/login`,
     method: 'POST',
     data: { ...requestData, password: '***hidden***' }
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/customer/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,20 +73,20 @@ export async function customerLogin(credentials) {
  */
 export async function customerSignup(userData) {
   const requestData = {
-    name: userData.fullName,
+    fullName: userData.fullName,
+    mobile: userData.mobile,
     email: userData.email,
     password: userData.password,
-    phone: userData.mobile,
   };
 
-//   console.log('🟢 Customer Signup Request:', {
-//     url: `${API_BASE_URL}/auth/register`,
-//     method: 'POST',
-//     data: { ...requestData, password: '***hidden***' }
-//   });
+  console.log('🟢 Customer Signup Request:', {
+    url: `${API_BASE_URL}/auth/customer/signup`,
+    method: 'POST',
+    data: { ...requestData, password: '***hidden***' }
+  });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${API_BASE_URL}/auth/customer/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

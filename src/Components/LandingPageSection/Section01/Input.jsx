@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function Input() {
   const [rideType, setRideType] = useState("airport");
@@ -7,6 +8,12 @@ export default function Input() {
   const [toQuery, setToQuery] = useState("");
   const [showFromSuggestions, setShowFromSuggestions] = useState(false);
   const [showToSuggestions, setShowToSuggestions] = useState(false);
+
+  // ADDED: pickup date/time state (behavior only — UI unchanged)
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
+
+  const navigate = useNavigate();
 
   const cities = [
     "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai",
@@ -39,6 +46,25 @@ export default function Input() {
 
   const hideWithDelay = (setter) => {
     setTimeout(() => setter(false), 150);
+  };
+
+  // ADDED: navigation handler (only logic, no UI change)
+  const onBook = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    if (!fromQuery || !toQuery) {
+      return alert("Please enter both From and To");
+    }
+
+    navigate("/cab-booking", {
+      state: {
+        from: fromQuery,
+        to: toQuery,
+        pickupDate,
+        pickupTime,
+        rideType,
+      },
+    });
   };
 
   return (
@@ -183,6 +209,8 @@ export default function Input() {
             </label>
             <input
               type="date"
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-transparent text-white focus:ring-2 focus:ring-yellow-400 outline-none appearance-none text-sm"
             />
           </div>
@@ -194,6 +222,8 @@ export default function Input() {
             </label>
             <input
               type="time"
+              value={pickupTime}
+              onChange={(e) => setPickupTime(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-transparent text-white focus:ring-2 focus:ring-yellow-400 outline-none appearance-none text-sm"
             />
           </div>
@@ -233,6 +263,7 @@ export default function Input() {
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
+          onClick={onBook} // ADDED only this prop
           className="px-8 py-2 bg-yellow-400 text-gray-900 font-semibold rounded-lg hover:bg-yellow-300 transition duration-200 shadow-md"
         >
           🚖 Book Ride
