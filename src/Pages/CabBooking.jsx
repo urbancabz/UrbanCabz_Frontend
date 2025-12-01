@@ -115,6 +115,9 @@ export default function CabBooking() {
                 from={from}
                 to={to}
                 distanceKm={distanceKm}
+                rideType={rideType}
+                pickupDate={pickupDate}
+                pickupTime={pickupTime}
               />
             ))}
 

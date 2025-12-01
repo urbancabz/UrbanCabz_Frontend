@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * BookingDetailsMain
@@ -12,9 +13,11 @@ export default function BookingDetailsMain({
   pickupDate,
   pickupTime,
   distanceKm,
+  rideType = "oneway",
   price,
   onBack = () => {},
 }) {
+  const { user } = useAuth();
   const {
     name = "Vehicle",
     vehicleType = "Sedan",
@@ -71,6 +74,9 @@ export default function BookingDetailsMain({
             <div className="text-right">
               <div className="text-3xl font-extrabold">{price > 0 ? `₹${price.toLocaleString()}` : '—'}</div>
               <div className="text-sm text-gray-500">{distanceKm ? `${distanceKm} km` : 'Calculating...'}</div>
+              {rideType === "roundtrip" && (
+                <div className="text-xs text-gray-500 mt-1">Includes return journey</div>
+              )}
             </div>
           </div>
         </div>
@@ -107,30 +113,50 @@ export default function BookingDetailsMain({
         <form className="space-y-4">
           <div>
             <label className="block text-sm text-gray-700 mb-2">Pick-up Address</label>
-            <input defaultValue={from} className="w-full rounded-xl border px-4 py-3" />
+            <input
+              value={from || ""}
+              readOnly
+              className="w-full rounded-xl border px-4 py-3 bg-gray-50 text-gray-700 cursor-not-allowed"
+            />
           </div>
 
           <div>
             <label className="block text-sm text-gray-700 mb-2">Drop-off Address</label>
-            <input defaultValue={to} className="w-full rounded-xl border px-4 py-3" />
+            <input
+              value={to || ""}
+              readOnly
+              className="w-full rounded-xl border px-4 py-3 bg-gray-50 text-gray-700 cursor-not-allowed"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-700 mb-2">Name</label>
-              <input placeholder="Your name" className="w-full rounded-xl border px-4 py-3" />
+              <input
+                placeholder="Your name"
+                defaultValue={user?.name || ""}
+                className="w-full rounded-xl border px-4 py-3"
+              />
             </div>
 
             <div>
               <label className="block text-sm text-gray-700 mb-2">Contact No</label>
-              <input placeholder="+91 9XXXXXXXXX" className="w-full rounded-xl border px-4 py-3" />
+              <input
+                placeholder="+91 9XXXXXXXXX"
+                defaultValue={user?.phone || ""}
+                className="w-full rounded-xl border px-4 py-3"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-700 mb-2">Email Id</label>
-              <input placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3" />
+              <input
+                placeholder="you@example.com"
+                defaultValue={user?.email || ""}
+                className="w-full rounded-xl border px-4 py-3"
+              />
             </div>
 
             <div>

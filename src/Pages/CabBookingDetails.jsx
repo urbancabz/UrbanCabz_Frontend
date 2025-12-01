@@ -19,14 +19,17 @@ export default function CabBookingDetails() {
   const pickupDate = state?.pickupDate || "—";
   const pickupTime = state?.pickupTime || "—";
   const distanceKm = state?.distanceKm ?? null;
+  const rideType = state?.rideType || "oneway";
+  const isRoundTrip = rideType === "roundtrip";
 
   const basePrice = listing.basePrice ?? 12;
 
   const calculatePrice = () => {
     if (!distanceKm) return 0;
+    const billableDistance = distanceKm * (isRoundTrip ? 2 : 1);
     let pricePerKm = basePrice;
-    if (distanceKm > 300) pricePerKm = basePrice * 0.9;
-    return Math.round(distanceKm * pricePerKm);
+    if (billableDistance > 300) pricePerKm = basePrice * 0.9;
+    return Math.round(billableDistance * pricePerKm);
   };
 
   const price = calculatePrice();
@@ -48,6 +51,7 @@ export default function CabBookingDetails() {
             pickupDate={pickupDate}
             pickupTime={pickupTime}
             distanceKm={distanceKm}
+            rideType={rideType}
             price={price}
             onBack={goBack}
           />

@@ -3,61 +3,66 @@ import React, { useState, useEffect } from "react";
 import RoutingService from "../../services/routingService";
 import RouteMap from "./RouteMap";
 
+const INITIAL_METRICS = {
+  distanceKm: null,
+  durationMins: null,
+  distanceText: null,
+  durationText: null,
+  fromCoords: null,
+  toCoords: null,
+  routeCoordinates: null,
+  isEstimate: false,
+};
+
 export default function BookingSidebar({ from, to, pickupDate, pickupTime, onDistanceCalculated }) {
-  const [tripMetrics, setTripMetrics] = useState({
-    distanceKm: null,
-    durationMins: null,
-    distanceText: null,
-    durationText: null,
-    fromCoords: null,
-    toCoords: null,
-    routeCoordinates: null,
-  });
+  const [tripMetrics, setTripMetrics] = useState(INITIAL_METRICS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!from || !to) {
-      setTripMetrics({
-        distanceKm: null,
-        durationMins: null,
-        distanceText: null,
-        durationText: null,
-        fromCoords: null,
-        toCoords: null,
-        routeCoordinates: null,
-      });
+      setTripMetrics(INITIAL_METRICS);
       setError(null);
       return;
     }
 
+    let isMounted = true;
+
+    const cachedMetrics = RoutingService.getCachedRouteMetrics(from, to);
+    if (cachedMetrics) {
+      setTripMetrics(cachedMetrics);
+      onDistanceCalculated?.(cachedMetrics);
+    }
+
     const calculateDistance = async () => {
-      setLoading(true);
+      setLoading(!cachedMetrics);
       setError(null);
 
       try {
         const metrics = await RoutingService.getDistanceAndDuration(from, to);
+        if (!isMounted) return;
         setTripMetrics(metrics);
-        
-        // Pass metrics to parent component for price calculation
-        if (onDistanceCalculated) {
-          onDistanceCalculated(metrics);
-        }
+        onDistanceCalculated?.(metrics);
       } catch (err) {
-        console.error('Distance calculation failed:', err);
-        setError('Unable to calculate distance. Please check location names.');
+        console.error("Distance calculation failed:", err);
+        if (!isMounted) return;
+        setError("Unable to calculate distance. Please check location names.");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    // Add a small delay to avoid too many rapid requests
     const timeoutId = setTimeout(() => {
       calculateDistance();
-    }, 500);
+    }, cachedMetrics ? 200 : 400);
 
-    return () => clearTimeout(timeoutId);
-  }, [from, to]);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [from, to, onDistanceCalculated]);
 
   const distanceDisplay = loading 
     ? "Calculating..." 
@@ -117,6 +122,11 @@ export default function BookingSidebar({ from, to, pickupDate, pickupTime, onDis
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
               <span className="font-semibold">{tripMetrics.distanceText}</span>
+              {tripMetrics.isEstimate && (
+                <span className="text-[10px] uppercase tracking-wide text-blue-500 bg-white/70 px-2 py-0.5 rounded-full">
+                  approx
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 text-purple-700">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

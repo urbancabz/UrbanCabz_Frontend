@@ -1,7 +1,16 @@
 // src/services/authService.js
 
 // Configure your backend API URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+const CUSTOMER_PROFILE_KEY = 'customerProfile';
+
+function persistCustomerProfile(profile) {
+  if (profile) {
+    localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(profile));
+  } else {
+    localStorage.removeItem(CUSTOMER_PROFILE_KEY);
+  }
+}
 
 /**
  * Customer Login
@@ -15,13 +24,13 @@ export async function customerLogin(credentials) {
   };
 
   console.log('🔵 Customer Login Request:', {
-    url: `${API_BASE_URL}/auth/customer/login`,
+    url: `${API_BASE_URL}/auth/login`,
     method: 'POST',
     data: { ...requestData, password: '***hidden***' }
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/customer/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,6 +54,10 @@ export async function customerLogin(credentials) {
     if (data.token) {
       localStorage.setItem('customerToken', data.token);
       localStorage.setItem('userType', 'customer');
+    }
+
+    if (data.user) {
+      persistCustomerProfile(data.user);
     }
 
     return {
@@ -80,13 +93,13 @@ export async function customerSignup(userData) {
   };
 
   console.log('🟢 Customer Signup Request:', {
-    url: `${API_BASE_URL}/auth/customer/signup`,
+    url: `${API_BASE_URL}/auth/register`,
     method: 'POST',
     data: { ...requestData, password: '***hidden***' }
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/customer/signup`, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,6 +123,10 @@ export async function customerSignup(userData) {
     if (data.token) {
       localStorage.setItem('customerToken', data.token);
       localStorage.setItem('userType', 'customer');
+    }
+
+    if (data.user) {
+      persistCustomerProfile(data.user);
     }
 
     return {
@@ -268,6 +285,7 @@ export function logout() {
   localStorage.removeItem('customerToken');
   localStorage.removeItem('businessToken');
   localStorage.removeItem('userType');
+  persistCustomerProfile(null);
 }
 
 /**
@@ -290,4 +308,101 @@ export function getAuthToken() {
  */
 export function isAuthenticated() {
   return !!getAuthToken();
+}
+
+/**
+ * Fetch authenticated customer profile
+ */
+export async function fetchCustomerProfile() {
+  const token = getAuthToken();
+  if (!token) {
+    return { success: false, message: 'Not authenticated', status: 401 };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Unable to fetch profile',
+        status: response.status,
+      };
+    }
+
+    if (data.user) {
+      persistCustomerProfile(data.user);
+    }
+
+    return {
+      success: true,
+      data: data.user,
+      message: data.message || 'Profile fetched',
+      status: response.status,
+    };
+  } catch (error) {
+    console.error('❌ Fetch profile error:', error);
+    return {
+      success: false,
+      message: 'Network error. Please try again.',
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Update authenticated customer profile
+ */
+export async function updateCustomerProfile(payload) {
+  const token = getAuthToken();
+  if (!token) {
+    return { success: false, message: 'Not authenticated', status: 401 };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Unable to update profile',
+        status: response.status,
+      };
+    }
+
+    if (data.user) {
+      persistCustomerProfile(data.user);
+    }
+
+    return {
+      success: true,
+      data: data.user,
+      message: data.message || 'Profile updated',
+      status: response.status,
+    };
+  } catch (error) {
+    console.error('❌ Update profile error:', error);
+    return {
+      success: false,
+      message: 'Network error. Please try again.',
+      error: error.message,
+    };
+  }
 }

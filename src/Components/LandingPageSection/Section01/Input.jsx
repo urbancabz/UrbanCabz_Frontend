@@ -244,15 +244,6 @@ export default function Input() {
                 />
               </div>
 
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-semibold text-white mb-1">
-                  Drop Time
-                </label>
-                <input
-                  type="time"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-transparent text-white focus:ring-2 focus:ring-yellow-400 outline-none appearance-none text-sm"
-                />
-              </div>
             </>
           )}
         </motion.form>

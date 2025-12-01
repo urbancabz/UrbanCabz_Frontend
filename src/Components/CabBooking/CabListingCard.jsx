@@ -2,7 +2,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
+export default function CabListingCard({
+  listing = {},
+  from,
+  to,
+  distanceKm,
+  rideType = "oneway",
+  pickupDate,
+  pickupTime,
+}) {
   const {
     name,
     seats = 4,
@@ -14,20 +22,23 @@ export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
     image, // Add image prop
   } = listing;
 
-  // Calculate price based on distance
   const calculatePrice = () => {
     if (!distanceKm) return 0;
-    
+
+    const tripMultiplier = rideType === "roundtrip" ? 2 : 1;
+    const billableDistance = distanceKm * tripMultiplier;
+
     let pricePerKm = basePrice;
-    
-    if (distanceKm > 300) {
+
+    if (billableDistance > 300) {
       pricePerKm = basePrice * 0.9;
     }
-    
-    const totalPrice = Math.round(distanceKm * pricePerKm);
+
+    const totalPrice = Math.round(billableDistance * pricePerKm);
     return totalPrice;
   };
 
+  const isRoundTrip = rideType === "roundtrip";
   const price = calculatePrice();
   const originalPrice = price > 0 ? Math.round(price * 1.15) : 0;
   const discountPercent = 13;
@@ -35,16 +46,15 @@ export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
   const navigate = useNavigate();
 
   const onBookNow = () => {
-    // navigate to details page with all relevant info so CabBookingDetails is fully populated
     navigate("/cab-booking-details", {
       state: {
         listing,
         from,
         to,
         distanceKm,
-        // if you have pickup date/time available at parent, pass them in as well
-        pickupDate: undefined,
-        pickupTime: undefined,
+        rideType,
+        pickupDate,
+        pickupTime,
       },
     });
   };
@@ -105,9 +115,16 @@ export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
               {price > 0 ? `₹${price.toLocaleString()}` : 'Calculating...'}
             </div>
             {price > 0 && (
-              <div className="text-sm text-green-600 font-medium">
-                {discountPercent}% off
-              </div>
+              <>
+                <div className="text-sm text-green-600 font-medium">
+                  {discountPercent}% off
+                </div>
+                {isRoundTrip && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Includes return journey
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -132,7 +149,7 @@ export default function CabListingCard({ listing = {}, from, to, distanceKm }) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-              {distanceKm} km
+              {isRoundTrip ? `${(distanceKm * 2).toFixed(1)} km (round trip)` : `${distanceKm} km`}
             </div>
           )}
         </div>

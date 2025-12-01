@@ -1,16 +1,17 @@
 // src/Model/Login_SignUp_Model.jsx
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  customerLogin, 
-  customerSignup, 
-  businessLogin, 
-  businessSignup 
+import {
+  customerSignup,
+  businessLogin,
+  businessSignup,
 } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const [isLogin, setIsLogin] = useState(true);
   const isBusiness = variant === "business";
+  const { loginCustomer } = useAuth();
 
   // Form states
   const [formData, setFormData] = useState({
@@ -58,7 +59,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
 
     setLoading(true);
 
-    const result = await customerLogin({
+    const result = await loginCustomer({
       email: formData.email,
       password: formData.password,
     });
