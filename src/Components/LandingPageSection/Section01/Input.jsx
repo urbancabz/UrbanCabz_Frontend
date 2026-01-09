@@ -235,7 +235,7 @@ export default function Input() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="
           bg-stone-950/40 backdrop-blur-2xl border border-white/5
-          rounded-3xl p-6 md:p-8
+          rounded-3xl p-4 md:p-8
           mx-auto max-w-3xl w-[95%] 
           relative z-40 shadow-2xl shadow-black/80
         "
@@ -243,26 +243,29 @@ export default function Input() {
         {/* Content Container */}
         <div className="relative z-10">
           {/* Ride Type Tabs */}
-          <div className="flex justify-center gap-2 mb-8 bg-black/20 p-1.5 rounded-2xl w-fit mx-auto backdrop-blur-sm border border-white/5">
+          {/* Ride Type Tabs - Mobile Grid / Desktop Flex */}
+          <div className="grid grid-cols-3 md:flex md:justify-center gap-2 mb-6 md:mb-8 bg-black/20 p-1.5 rounded-2xl w-full md:w-fit mx-auto backdrop-blur-sm border border-white/5">
             {[
-              { value: "airport", label: "Airport Transfer", icon: Plane },
-              { value: "oneway", label: "One-Way", icon: Navigation },
-              { value: "roundtrip", label: "Round Trip", icon: CornerDownRight },
+              { value: "airport", label: "Airport Transfer", shortLabel: "Airport", icon: Plane },
+              { value: "oneway", label: "One-Way", shortLabel: "One-Way", icon: Navigation },
+              { value: "roundtrip", label: "Round Trip", shortLabel: "Round Trip", icon: CornerDownRight },
             ].map((option) => (
               <button
                 key={option.value}
                 onClick={() => setRideType(option.value)}
                 className={`
-                    flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm
+                    flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-2 md:px-5 py-3 md:py-2.5 rounded-xl transition-all duration-300 font-medium
                     ${rideType === option.value
-                    ? "bg-yellow-400 text-stone-950 shadow-lg shadow-yellow-400/20 transtone-y-[-1px]"
+                    ? "bg-yellow-400 text-stone-950 shadow-lg shadow-yellow-400/20"
                     : "text-stone-400 hover:text-white hover:bg-white/5"
                   } 
                 `}
               >
-                <option.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{option.label}</span>
-                <span className="sm:hidden">{option.label.split(' ')[0]}</span>
+                <option.icon className="w-5 h-5 md:w-4 md:h-4 mb-0.5 md:mb-0" />
+                <span className="text-[11px] leading-tight md:text-sm text-center">
+                  <span className="hidden sm:inline">{option.label}</span>
+                  <span className="sm:hidden">{option.shortLabel}</span>
+                </span>
               </button>
             ))}
           </div>

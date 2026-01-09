@@ -19,10 +19,10 @@ export default function Services({ services }) {
   };
 
   return (
-    <div className="px-6 md:px-20 lg:px-32 pb-32 bg-slate-50">
-      <div className="text-center mb-16">
-        <h2 className="text-sm font-bold tracking-[0.2em] text-yellow-600 uppercase mb-3">Our Services</h2>
-        <h3 className="text-4xl md:text-5xl font-black text-slate-900">
+    <div className="px-4 md:px-20 lg:px-32 pb-20 md:pb-32 bg-slate-50">
+      <div className="text-center mb-10 md:mb-16">
+        <h2 className="text-xs md:text-sm font-bold tracking-[0.2em] text-yellow-600 uppercase mb-2 md:mb-3">Our Services</h2>
+        <h3 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
           Experiences crafted for <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">every journey.</span>
         </h3>
       </div>
@@ -31,7 +31,7 @@ export default function Services({ services }) {
         {services.map((service, index) => (
           <motion.div
             key={index}
-            className="group relative h-[450px] rounded-[1.5rem] overflow-hidden shadow-xl cursor-pointer bg-slate-900 border border-slate-200"
+            className="group relative h-[380px] md:h-[450px] rounded-[1.5rem] overflow-hidden shadow-xl cursor-pointer bg-slate-900 border border-slate-200"
             initial="initial"
             whileHover="hover"
             animate="initial"
@@ -51,14 +51,14 @@ export default function Services({ services }) {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
 
             {/* Content */}
-            <div className="absolute bottom-0 left-0 right-0 p-8 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-              <div className="w-10 h-1 bg-yellow-400 mb-4 rounded-full"></div>
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+              <div className="w-10 h-1 bg-yellow-400 mb-3 md:mb-4 rounded-full"></div>
 
-              <h3 className="text-2xl md:text-3xl font-bold mb-3 leading-tight">
+              <h3 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3 leading-tight">
                 {service.title}
               </h3>
 
-              <motion.p className="text-base text-slate-300 leading-relaxed mb-4 max-w-sm line-clamp-3">
+              <motion.p className="text-sm md:text-base text-slate-300 leading-relaxed mb-4 max-w-sm line-clamp-3">
                 {service.description}
               </motion.p>
 
