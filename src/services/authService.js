@@ -1,7 +1,7 @@
 // src/services/authService.js
 
 // Configure your backend API URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050/api/v1';
 const CUSTOMER_PROFILE_KEY = 'customerProfile';
 
 function setAdminSession(token) {
@@ -199,12 +199,12 @@ export async function businessLogin(credentials) {
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/business/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/b2b/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestData),
+      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
     });
 
     console.log('🟡 Business Login Response Status:', response.status);
@@ -530,5 +530,91 @@ export async function completePasswordReset(payload) {
       message: 'Network error. Please try again.',
       error: error.message,
     };
+  }
+}
+
+/**
+ * Set B2B permanent password (first login)
+ */
+export async function b2bSetPassword(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/b2b/set-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Unable to set password',
+      };
+    }
+
+    if (data.token) {
+      localStorage.setItem('businessToken', data.token);
+      localStorage.setItem('userType', 'business');
+    }
+
+    return {
+      success: true,
+      data,
+      message: data.message || 'Password set successfully',
+    };
+  } catch (error) {
+    console.error('❌ B2B set password error:', error);
+    return {
+      success: false,
+      message: 'Network error. Please try again.',
+      error: error.message,
+    };
+  }
+}
+
+export async function getCompanyProfile() {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/company/my`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('getCompanyProfile error:', error);
+    return { success: false, message: 'Network error fetching company profile' };
+  }
+}
+
+export async function getCompanyBookings() {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('getCompanyBookings error:', error);
+    return { success: false, message: 'Network error fetching company bookings' };
+  }
+}
+
+export async function bookBusinessRide(bookingData) {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(bookingData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('bookBusinessRide error:', error);
+    return { success: false, message: 'Network error booking business ride' };
   }
 }

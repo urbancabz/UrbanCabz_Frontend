@@ -6,6 +6,10 @@ import LandingPage from "./Pages/LandingPage";
 import CabBooking from "./Pages/CabBooking";
 import CabBookingDetails from "./Pages/CabBookingDetails";
 import AdminDashboard from "./Pages/AdminDashboard";
+import BusinessDashboard from "./Pages/BusinessDashboard";
+import BusinessBookRide from "./Pages/BusinessBookRide";
+import BusinessBookingDetails from "./Pages/BusinessBookingDetails";
+import CompanyList from "./Components/Admin/CompanyList";
 import {
   BrowserRouter as Router,
   Routes,
@@ -76,6 +80,38 @@ const AnimatedRoutes = () => {
             </AdminRoute>
           }
         />
+        <Route
+          path="/admin/companies"
+          element={
+            <AdminRoute>
+              <CompanyList />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/business/dashboard"
+          element={
+            <PageWrapper>
+              <BusinessDashboard />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/business/book-ride"
+          element={
+            <PageWrapper>
+              <BusinessBookRide />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/business/booking-details"
+          element={
+            <PageWrapper>
+              <BusinessBookingDetails />
+            </PageWrapper>
+          }
+        />
       </Routes>
     </AnimatePresence>
   );
@@ -85,6 +121,9 @@ const AnimatedRoutes = () => {
 const AppLayout = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isBusinessRoute = location.pathname.startsWith("/business");
+
+  const hideNavFooter = isAdminRoute || isBusinessRoute;
 
   // Check if user is admin - first from localStorage (fast), then verify with backend
   const [checkingAdmin, setCheckingAdmin] = useState(true);
@@ -150,9 +189,9 @@ const AppLayout = () => {
 
   return (
     <>
-      {!isAdminRoute && <Navbar />}
+      {!hideNavFooter && <Navbar />}
       <AnimatedRoutes />
-      {!isAdminRoute && <Footer />}
+      {!hideNavFooter && <Footer />}
     </>
   );
 };

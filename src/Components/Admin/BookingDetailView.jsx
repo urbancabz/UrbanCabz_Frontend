@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     upsertTaxiAssignment,
     updateBookingStatus,
@@ -9,19 +10,20 @@ import {
 
 export default function BookingDetailView({
     booking,
-    onUpdate
+    onUpdate,
+    onClose
 }) {
-    const [activeTab, setActiveTab] = useState("OVERVIEW"); // OVERVIEW, ASSIGN, NOTES
-    const [note, setNote] = useState("");
     const [saving, setSaving] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
+
     const [cancelReason, setCancelReason] = useState("");
     const [completeForm, setCompleteForm] = useState({
         actual_km: booking?.distance_km || 0,
         toll_charges: 0,
     });
-    const [form, setForm] = useState({
+    const [assignForm, setAssignForm] = useState({
         driverName: booking?.assign_taxis?.[0]?.driver_name || "",
         driverNumber: booking?.assign_taxis?.[0]?.driver_number || "",
         cabNumber: booking?.assign_taxis?.[0]?.cab_number || "",
@@ -43,12 +45,13 @@ export default function BookingDetailView({
         e.preventDefault();
         setSaving(true);
         const result = await upsertTaxiAssignment(booking.id, {
-            ...form,
+            ...assignForm,
             markAssigned: true
         });
         setSaving(false);
-        if (result.success && onUpdate) {
-            onUpdate();
+        if (result.success) {
+            setShowAssignModal(false);
+            onUpdate?.();
         } else {
             alert(result.message || "Failed to save assignment");
         }
@@ -59,11 +62,7 @@ export default function BookingDetailView({
         setSaving(true);
         const result = await updateBookingStatus(booking.id, "IN_PROGRESS", "Trip started by admin");
         setSaving(false);
-        if (result.success && onUpdate) {
-            onUpdate();
-        } else {
-            alert(result.message || "Failed to start trip");
-        }
+        if (result.success) onUpdate?.();
     };
 
     const handleCompleteTrip = async () => {
@@ -71,397 +70,134 @@ export default function BookingDetailView({
         const result = await completeTrip(booking.id, completeForm);
         setSaving(false);
         setShowCompleteModal(false);
-        if (result.success && onUpdate) {
-            alert(`Trip completed! Total: ₹${result.data.adjustments.new_total}`);
-            onUpdate();
-        } else {
-            alert(result.message || "Failed to complete trip");
+        if (result.success) {
+            alert(`Trip completed! Final: ₹${result.data.adjustments.new_total}`);
+            onUpdate?.();
         }
     };
 
     const handleCancelBooking = async () => {
-        if (!cancelReason.trim()) {
-            alert("Please provide a cancellation reason");
-            return;
-        }
+        if (!cancelReason.trim()) return alert("Provide reason");
         setSaving(true);
         const result = await cancelBooking(booking.id, cancelReason);
         setSaving(false);
         setShowCancelModal(false);
-        if (result.success && onUpdate) {
-            onUpdate();
-        } else {
-            alert(result.message || "Failed to cancel booking");
+        if (result.success) onUpdate?.();
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
+            case 'PAID': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+            case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
+            default: return 'bg-amber-100 text-amber-700 border-amber-200';
         }
     };
-
-    const handleSaveNote = async () => {
-        if (!note.trim()) return;
-        setSaving(true);
-        const result = await addBookingNote(booking.id, note);
-        setSaving(false);
-        if (result.success) {
-            setNote("");
-            alert("Note saved!");
-        } else {
-            alert(result.message || "Failed to save note");
-        }
-    };
-
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text);
-        alert("Copied to clipboard!");
-    };
-
-    const whatsappText = useMemo(() => {
-        if (!booking) return "";
-        const lines = [
-            `*UrbanCabz Booking Confirmation* 🚖`,
-            `Booking ID: ${booking.id}`,
-            `Pickup: ${new Date(booking.created_at).toLocaleString()}`, // Simplification for now, ideal to use scheduled_at
-            `From: ${booking.pickup_location}`,
-            `To: ${booking.drop_location}`,
-            `------------------`,
-            `Vehicle: ${form.cabName} (${form.cabNumber})`,
-            `Driver: ${form.driverName} (${form.driverNumber})`,
-            `------------------`,
-            `Thank you for choosing UrbanCabz!`
-        ];
-        return lines.join("\n");
-    }, [booking, form]);
-
-    const driverText = useMemo(() => {
-        if (!booking) return "";
-        const lines = [
-            `*New Trip Assignment* 🚨`,
-            `Customer: ${booking.user?.name} (${booking.user?.phone})`,
-            `From: ${booking.pickup_location}`,
-            `To: ${booking.drop_location}`,
-            `Fare to Collect: ₹${due > 0 ? due : 0}`, // Focus on what driver needs to collect
-        ];
-        return lines.join("\n");
-    }, [booking, due]);
 
     return (
-        <section className="flex flex-col h-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm relative">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 font-mono">
-                            #{booking.id}
-                        </span>
-                        {booking.car_model && (
-                            <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1">
-                                🚕 {booking.car_model}
-                            </span>
-                        )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${booking.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                            booking.status === 'CANCELLED' ? 'bg-rose-100 text-rose-700' :
-                                'bg-amber-100 text-amber-700'
-                            }`}>
-                            {booking.status}
-                        </span>
-                    </div>
-                    <h2 className="text-lg font-bold text-slate-900">Trip Details</h2>
+        <>
+            {/* Top Right Floating Compact Detail (Small Letters) */}
+            <motion.div
+                initial={{ opacity: 0, y: -20, x: 20 }}
+                animate={{ opacity: 1, y: 0, x: 0 }}
+                className="fixed top-24 right-8 z-[60] w-72 bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl p-4 space-y-3"
+            >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Selected: #{booking.id}</span>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
                 </div>
 
-                {/* Manual Controls */}
-                <div className="flex gap-2">
-                    {booking.status === 'PAID' && (
-                        <button
-                            onClick={handleStartTrip}
-                            disabled={saving}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
-                        >
+                <div className="text-[10px] space-y-1.5 text-slate-500 font-bold uppercase leading-tight">
+                    <p className="text-slate-900 line-clamp-1">👤 {booking.user?.name || "Guest"}</p>
+                    <p>📞 {booking.user?.phone}</p>
+                    <p className="line-clamp-1">📍 {booking.pickup_location?.split(',')[0]} → {booking.drop_location?.split(',')[0]}</p>
+                    <div className="pt-1 flex items-center justify-between">
+                        <span className={`px-2 py-0.5 rounded border ${getStatusColor(booking.status)}`}>{booking.status}</span>
+                        <p className="text-slate-900 text-xs">Due: ₹{due}</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                    {booking.status === "PAID" && (
+                        <button onClick={() => setShowAssignModal(true)} className="col-span-2 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-md">
+                            Assign & Dispatch
+                        </button>
+                    )}
+                    {booking.status === "PAID" && booking.assign_taxis?.[0] && (
+                        <button onClick={handleStartTrip} className="col-span-2 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700">
                             Start Trip
                         </button>
                     )}
-                    {booking.status === 'IN_PROGRESS' && (
-                        <button
-                            onClick={() => setShowCompleteModal(true)}
-                            disabled={saving}
-                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
-                        >
+                    {booking.status === "IN_PROGRESS" && (
+                        <button onClick={() => setShowCompleteModal(true)} className="col-span-2 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-700">
                             Complete Trip
                         </button>
                     )}
-                    {booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED' && (
-                        <button
-                            onClick={() => setShowCancelModal(true)}
-                            disabled={saving}
-                            className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-all disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-                    )}
+                    <button onClick={() => setShowCancelModal(true)} className="py-2 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-rose-50 hover:text-rose-600">Cancel</button>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Overview / Tabs */}
-            <div className="flex border-b border-slate-200 bg-white">
-                {['OVERVIEW', 'ASSIGNMENT', 'NOTES'].map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === tab ? 'border-indigo-500 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                            }`}
-                    >
-                        {tab}
-                    </button>
-                ))
-                }
-            </div >
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-
-                {activeTab === 'OVERVIEW' && (
-                    <div className="space-y-6">
-                        {/* Consumer Info */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                                <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Customer</p>
-                                <p className="text-sm font-semibold text-slate-900">{booking.user?.name || "Guest"}</p>
-                                <p className="text-xs text-slate-500">{booking.user?.phone}</p>
+            {/* Modals */}
+            <AnimatePresence>
+                {showAssignModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
+                            <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                                <h3 className="text-xl font-black">Dispatch Assignment 🚕</h3>
+                                <button onClick={() => setShowAssignModal(false)}>✕</button>
                             </div>
-                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                                <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Route</p>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs text-slate-700 truncate" title={booking.pickup_location}>🟢 {booking.pickup_location}</span>
-                                    <span className="text-xs text-slate-700 truncate" title={booking.drop_location}>🔴 {booking.drop_location}</span>
+                            <form onSubmit={handleAssignmentSubmit} className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {['driverName', 'driverNumber', 'cabName', 'cabNumber'].map(field => (
+                                        <div key={field} className="space-y-1">
+                                            <label className="text-[10px] uppercase font-black text-slate-500">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={assignForm[field]} onChange={e => setAssignForm({ ...assignForm, [field]: e.target.value })} required />
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                            {booking.car_model && (
-                                <div className="col-span-2 p-3 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] uppercase text-indigo-500 font-bold mb-0.5">Requested Vehicle</p>
-                                        <p className="text-sm font-bold text-indigo-900">{booking.car_model}</p>
-                                    </div>
-                                    <div className="text-2xl">🚖</div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Financials */}
-                        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm">
-                            <h3 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Payment Ledger</h3>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-slate-600">Total Fare Base</span>
-                                <span className="text-sm font-mono text-slate-800">₹{total}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-emerald-600">Paid Online</span>
-                                <span className="text-sm font-mono text-emerald-600">- ₹{paid}</span>
-                            </div>
-                            <div className="h-px bg-slate-200 my-2" />
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-bold text-slate-900">Balance Due</span>
-                                <span className={`text-lg font-mono font-bold ${due > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                                    ₹{due}
-                                </span>
-                            </div>
-                        </div>
+                                <button type="submit" disabled={saving} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20">
+                                    Confirm Dispatch
+                                </button>
+                            </form>
+                        </motion.div>
                     </div>
                 )}
 
-                {activeTab === 'ASSIGNMENT' && (
-                    <div className="space-y-6">
-                        <form onSubmit={handleAssignmentSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Driver Name</label>
-                                    <input
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={form.driverName}
-                                        onChange={e => setForm({ ...form, driverName: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Driver Phone</label>
-                                    <input
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={form.driverNumber}
-                                        onChange={e => setForm({ ...form, driverNumber: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Cab Model</label>
-                                    <input
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={form.cabName}
-                                        onChange={e => setForm({ ...form, cabName: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Cab Number</label>
-                                    <input
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={form.cabNumber}
-                                        onChange={e => setForm({ ...form, cabNumber: e.target.value })}
-                                        required
-                                    />
-                                </div>
+                {/* Cancel Modal */}
+                {showCancelModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm">
+                            <h3 className="text-lg font-black text-rose-600 mb-4">Cancel Trip?</h3>
+                            <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold mb-4" rows={3} placeholder="Reason for cancellation..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
+                            <div className="flex gap-3">
+                                <button onClick={handleCancelBooking} className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase">Confirm</button>
+                                <button onClick={() => setShowCancelModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase">Back</button>
                             </div>
-
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
-                            >
-                                {saving ? "Saving Assignment..." : "Update Assignment & Notify"}
-                            </button>
-                        </form>
-
-                        <div className="h-px bg-slate-200" />
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-xs font-bold uppercase text-slate-500">Communication Center</h4>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => copyToClipboard(whatsappText)}
-                                    className="p-3 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all text-left"
-                                >
-                                    <span className="block mb-1 text-[10px] opacity-70 uppercase">Customer Msg</span>
-                                    Copy WhatsApp Confirm
-                                </button>
-                                <button
-                                    onClick={() => copyToClipboard(driverText)}
-                                    className="p-3 rounded-lg border border-dashed border-indigo-300 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all text-left"
-                                >
-                                    <span className="block mb-1 text-[10px] opacity-70 uppercase">Driver Msg</span>
-                                    Copy Assignment Details
-                                </button>
-                            </div>
-                        </div>
+                        </motion.div>
                     </div>
                 )}
 
-                {activeTab === 'NOTES' && (
-                    <div className="flex flex-col h-full">
-                        <textarea
-                            className="flex-1 bg-white border border-slate-300 rounded-lg p-3 text-sm text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none"
-                            placeholder="Add internal notes about this trip (e.g., 'Customer requested child seat', 'Payment collected in cash')..."
-                            value={note}
-                            onChange={e => setNote(e.target.value)}
-                            rows={8}
-                        />
-                        <button className="mt-3 self-end px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all">
-                            Save Note
-                        </button>
-                    </div>
-                )}
-
-            </div>
-
-            {/* Cancel Modal */}
-            {showCancelModal && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/10 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-sm border border-slate-200 overflow-hidden">
-                        <div className="p-4 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-rose-800 uppercase tracking-wide">Confirm Cancellation</h3>
-                            <button onClick={() => setShowCancelModal(false)} className="text-rose-400 hover:text-rose-600">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="p-4 space-y-4">
-                            <p className="text-sm text-slate-600">
-                                Are you sure you want to cancel this booking? This action cannot be undone and will be logged.
-                            </p>
-                            <div>
-                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Cancellation Reason</label>
-                                <textarea
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-rose-500 outline-none resize-none"
-                                    rows={3}
-                                    placeholder="e.g., Customer requested, Driver unavailable..."
-                                    value={cancelReason}
-                                    onChange={e => setCancelReason(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex gap-2 pt-2">
-                                <button
-                                    onClick={handleCancelBooking}
-                                    disabled={saving}
-                                    className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-sm transition-all"
-                                >
-                                    {saving ? "Cancelling..." : "Confirm Cancel"}
-                                </button>
-                                <button
-                                    onClick={() => setShowCancelModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm transition-all"
-                                >
-                                    Back
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )
-            }
-
-            {/* Complete Trip Modal */}
-            {
-                showCompleteModal && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/10 backdrop-blur-sm">
-                        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm border border-slate-200 overflow-hidden">
-                            <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-indigo-800 uppercase tracking-wide">Complete Trip</h3>
-                                <button onClick={() => setShowCompleteModal(false)} className="text-indigo-400 hover:text-indigo-600">
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="p-4 space-y-3">
+                {/* Complete Modal */}
+                {showCompleteModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm">
+                            <h3 className="text-lg font-black text-indigo-600 mb-4">Complete Trip</h3>
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Actual Km Run</label>
-                                    <input
-                                        type="number"
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 outline-none"
-                                        value={completeForm.actual_km}
-                                        onChange={e => setCompleteForm({ ...completeForm, actual_km: e.target.value })}
-                                    />
-                                    <p className="text-[10px] text-slate-400 mt-1">
-                                        Initial Estimate: {booking.distance_km || 0} km. Extra fare will be added for excess.
-                                    </p>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase">Actual Km Run</label>
+                                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={completeForm.actual_km} onChange={e => setCompleteForm({ ...completeForm, actual_km: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Toll Charges</label>
-                                    <input
-                                        type="number"
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-slate-900 focus:border-indigo-500 outline-none"
-                                        value={completeForm.toll_charges}
-                                        onChange={e => setCompleteForm({ ...completeForm, toll_charges: e.target.value })}
-                                    />
+                                    <label className="text-[10px] font-black text-slate-500 uppercase">Toll / Parking</label>
+                                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={completeForm.toll_charges} onChange={e => setCompleteForm({ ...completeForm, toll_charges: e.target.value })} />
                                 </div>
-
-                                <div className="flex gap-2 pt-2">
-                                    <button
-                                        onClick={handleCompleteTrip}
-                                        disabled={saving}
-                                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm transition-all"
-                                    >
-                                        {saving ? "Completing..." : "Complete & Calculate Fare"}
-                                    </button>
-                                    <button
-                                        onClick={() => setShowCompleteModal(false)}
-                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm transition-all"
-                                    >
-                                        Back
-                                    </button>
-                                </div>
+                                <button onClick={handleCompleteTrip} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase">Complete & Calculate</button>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
-                )
-            }
-        </section >
+                )}
+            </AnimatePresence>
+        </>
     );
 }

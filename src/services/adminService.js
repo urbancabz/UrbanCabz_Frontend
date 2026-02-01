@@ -2,7 +2,7 @@
 // Small helper wrapper around admin APIs for booking tickets and taxi assignment.
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
 function getAuthToken() {
   const userType = localStorage.getItem("userType");
@@ -331,6 +331,132 @@ export async function fetchPendingPayments() {
     return { success: true, data };
   } catch (error) {
     console.error("fetchPendingPayments error:", error);
+  }
+}
+
+// ===================== B2B DISPATCH OPERATIONS =====================
+
+/**
+ * Fetch all B2B bookings for admin dispatch
+ */
+export async function fetchB2BBookings() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Unable to load B2B bookings" };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("fetchB2BBookings error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Assign taxi to a B2B booking
+ */
+export async function upsertB2BTaxiAssignment(bookingId, payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings/${bookingId}/assign-taxi`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to assign B2B taxi" };
+    }
+    return { success: true, data, message: data.message };
+  } catch (error) {
+    console.error("upsertB2BTaxiAssignment error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Mark B2B bill as paid (offline)
+ */
+export async function markB2BBillPaid(bookingId, payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings/${bookingId}/mark-paid`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to mark paid" };
+    }
+    return { success: true, data, message: data.message };
+  } catch (error) {
+    console.error("markB2BBillPaid error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Update B2B booking status
+ */
+export async function updateB2BBookingStatus(bookingId, status, reason = "") {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings/${bookingId}/status`, {
+      method: "PATCH",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to update B2B status" };
+    }
+    return { success: true, data, message: data.message };
+  } catch (error) {
+    console.error("updateB2BBookingStatus error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Complete B2B trip
+ */
+export async function completeB2BTrip(bookingId, payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings/${bookingId}/complete`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to complete B2B trip" };
+    }
+    return { success: true, data, message: data.message };
+  } catch (error) {
+    console.error("completeB2BTrip error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Cancel B2B booking
+ */
+export async function cancelB2BBooking(bookingId, reason) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/b2b-bookings/${bookingId}/cancel`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to cancel B2B booking" };
+    }
+    return { success: true, data, message: data.message };
+  } catch (error) {
+    console.error("cancelB2BBooking error:", error);
     return { success: false, message: "Network error" };
   }
 }

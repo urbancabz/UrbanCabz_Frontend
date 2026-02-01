@@ -8,6 +8,8 @@ export default function CabBooking() {
   const { state } = useLocation();
   const from = state?.from || "Pickup location";
   const to = state?.to || "Drop location";
+  const pickupCoords = state?.pickupCoords || null;
+  const dropCoords = state?.dropCoords || null;
   const pickupDate = state?.pickupDate || "—";
   const returnDate = state?.returnDate || "—";
   const pickupTime = state?.pickupTime || "—";
@@ -165,6 +167,8 @@ export default function CabBooking() {
             <BookingSidebar
               from={from}
               to={to}
+              pickupCoords={pickupCoords}
+              dropCoords={dropCoords}
               pickupDate={pickupDate}
               pickupTime={pickupTime}
               onDistanceCalculated={handleDistanceCalculated}

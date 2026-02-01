@@ -115,6 +115,43 @@ const MapplsService = {
       throw error;
     }
   },
+
+  // AutoSuggest locations
+  async getSuggestions(query) {
+    if (!query || query.length < 2) return [];
+
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(
+        `https://atlas.mappls.com/api/places/autosuggest?query=${encodeURIComponent(query)}&region=ind&tokenizeAddress=true&pod=CITY,VILLAGE,LOCALITY,SUB_LOCALITY,POI`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        }
+      );
+
+      if (!response.ok) return [];
+
+      const data = await response.json();
+
+      if (data.suggestedLocations && data.suggestedLocations.length > 0) {
+        return data.suggestedLocations.map(item => ({
+          label: item.placeName + (item.placeAddress ? `, ${item.placeAddress}` : ""),
+          lat: parseFloat(item.latitude),
+          lon: parseFloat(item.longitude),
+          display_name: item.placeAddress,
+          source: 'mappls'
+        }));
+      }
+
+      return [];
+    } catch (error) {
+      console.warn('Mappls suggestions error:', error);
+      return [];
+    }
+  },
 };
 
 export default MapplsService;
