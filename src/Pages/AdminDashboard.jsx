@@ -9,7 +9,8 @@ import BookingDetailView from "../Components/Admin/BookingDetailView";
 import HistoryTable from "../Components/Admin/HistoryTable";
 import B2BRequestsList from "../Components/Admin/B2BRequestsList";
 import CompanyList from "../Components/Admin/CompanyList";
-import B2BDispatch from "../Components/Admin/B2BDispatch";
+import B2BBookingList from "../Components/Admin/B2BBookingList";
+import B2BBookingDetailView from "../Components/Admin/B2BBookingDetailView";
 import FleetManager from "../Components/Admin/FleetManager";
 import DriverList from "../Components/Admin/DriverList";
 import PricingSettings from "../Components/Admin/PricingSettings";
@@ -21,6 +22,7 @@ import {
   fetchCompletedBookings,
   fetchCancelledBookings,
   fetchPendingPayments,
+  fetchB2BBookings,
 } from "../services/adminService";
 
 export default function AdminDashboard() {
@@ -30,6 +32,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [b2bBookings, setB2BBookings] = useState([]);
+  const [selectedB2BBooking, setSelectedB2BBooking] = useState(null);
   const [adminInfo, setAdminInfo] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState("STATS");
@@ -44,6 +48,11 @@ export default function AdminDashboard() {
       const result = await fetchAdminBookings();
       if (result.success && !cancelled) {
         setTickets(result.data.bookings || []);
+      }
+
+      const b2bRes = await fetchB2BBookings();
+      if (b2bRes.success && !cancelled) {
+        setB2BBookings(b2bRes.data.bookings || []);
       }
     };
 
@@ -252,7 +261,31 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeView === "B2B_DISPATCH" && <B2BDispatch />}
+              {activeView === "B2B_DISPATCH" && (
+                <div className="h-[calc(100vh-160px)] grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                  <B2BBookingList
+                    bookings={b2bBookings}
+                    selectedId={selectedB2BBooking?.id}
+                    onSelect={setSelectedB2BBooking}
+                  />
+                  <AnimatePresence>
+                    {selectedB2BBooking && (
+                      <B2BBookingDetailView
+                        booking={selectedB2BBooking}
+                        onClose={() => setSelectedB2BBooking(null)}
+                        onUpdate={async () => {
+                          const res = await fetchB2BBookings();
+                          if (res.success) {
+                            setB2BBookings(res.data.bookings || []);
+                            const current = res.data.bookings.find(b => b.id === selectedB2BBooking.id);
+                            if (current) setSelectedB2BBooking(current);
+                          }
+                        }}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
               {activeView === "B2B" && <B2BRequestsList />}
               {activeView === "COMPANIES" && <CompanyList />}
               {activeView === "FLEET" && <FleetManager />}
