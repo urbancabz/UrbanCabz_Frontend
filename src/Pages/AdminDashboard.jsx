@@ -239,7 +239,7 @@ export default function AdminDashboard() {
               {activeView === "STATS" && <AdminStats summary={summary} />}
 
               {activeView === "DISPATCH" && (
-                <div className="h-[calc(100vh-160px)] grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                <div className="h-[calc(100vh-140px)]">
                   <BookingList
                     tickets={tickets}
                     selectedId={selectedTicket?.id}
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
               )}
 
               {activeView === "B2B_DISPATCH" && (
-                <div className="h-[calc(100vh-160px)] grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                <div className="h-[calc(100vh-140px)]">
                   <B2BBookingList
                     bookings={b2bBookings}
                     selectedId={selectedB2BBooking?.id}
