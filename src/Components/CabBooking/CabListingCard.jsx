@@ -11,6 +11,7 @@ export default function CabListingCard({
   pickupDate,
   returnDate,
   pickupTime,
+  pricingSettings,
 }) {
   const {
     name,
@@ -20,20 +21,38 @@ export default function CabListingCard({
     tags = [],
     rating,
     vehicleType = "Sedan",
-    image, // Add image prop
+    image,
   } = listing;
 
   const calculatePrice = () => {
-    if (!distanceKm) return 0;
+    if (!distanceKm || !pricingSettings) return 0;
 
     let billableDistance = 0;
-    const MIN_KM_PER_DAY = 300;
+    const RULE_MIN_KM = 300;
+
+    // Use global settings
+    const {
+      min_km_threshold,
+      min_km_airport_apply,
+      min_km_oneway_apply,
+      min_km_roundtrip_apply
+    } = pricingSettings;
+
+    // Check if 300km rule should be applied
+    let applyRule = false;
+    if (distanceKm > min_km_threshold) {
+      if (rideType === "airport" && min_km_airport_apply) applyRule = true;
+      else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
+      else if (rideType === "roundtrip" && min_km_roundtrip_apply) applyRule = true;
+    }
+
+    const effectiveMinKmPerDay = applyRule ? RULE_MIN_KM : 0;
 
     if (rideType === "oneway" || rideType === "airport") {
-      // One-way: Base 300km
-      billableDistance = Math.max(MIN_KM_PER_DAY, distanceKm);
+      // One-way / Airport logic
+      billableDistance = Math.max(effectiveMinKmPerDay, distanceKm);
     } else if (rideType === "roundtrip") {
-      // Round-trip: 300km * number of days
+      // Round-trip logic
       let days = 1;
       if (pickupDate && returnDate && pickupDate !== "—" && returnDate !== "—") {
         const start = new Date(pickupDate);
@@ -43,14 +62,34 @@ export default function CabListingCard({
         days = diffDays + 1; // Include both start and end day
       }
 
-      const baseKm = days * MIN_KM_PER_DAY;
-      const actualKm = distanceKm * 2; // Assuming distanceKm is one-way distance
+      const baseKm = days * effectiveMinKmPerDay;
+      const actualKm = distanceKm * 2; // Roundtrip distance is 2x
       billableDistance = Math.max(baseKm, actualKm);
     }
 
     const pricePerKm = basePrice;
     const totalPrice = Math.round(billableDistance * pricePerKm);
     return totalPrice;
+  };
+
+  // Helper to check if min charge note should be shown
+  const isMinChargeApplied = () => {
+    if (!pricingSettings || !distanceKm) return false;
+    const { min_km_threshold, min_km_airport_apply, min_km_oneway_apply, min_km_roundtrip_apply } = pricingSettings;
+
+    if (distanceKm <= min_km_threshold) return false;
+
+    if (rideType === "airport" && min_km_airport_apply && distanceKm < 300) return true;
+    if (rideType === "oneway" && min_km_oneway_apply && distanceKm < 300) return true;
+
+    if (rideType === "roundtrip" && min_km_roundtrip_apply) {
+      let days = 1;
+      if (pickupDate && returnDate && pickupDate !== "—" && returnDate !== "—") {
+        days = Math.ceil(Math.abs(new Date(returnDate) - new Date(pickupDate)) / (1000 * 60 * 60 * 24)) + 1;
+      }
+      return (distanceKm * 2) < (300 * days);
+    }
+    return false;
   };
 
   const isRoundTrip = rideType === "roundtrip";
@@ -202,8 +241,7 @@ export default function CabListingCard({
                       Roundtrip
                     </span>
                   )}
-                  {((rideType === "oneway" || rideType === "airport") && distanceKm < 300) ||
-                    (rideType === "roundtrip" && (distanceKm * 2) < (300 * (pickupDate && returnDate && pickupDate !== "—" && returnDate !== "—" ? Math.ceil(Math.abs(new Date(returnDate) - new Date(pickupDate)) / (1000 * 60 * 60 * 24)) + 1 : 1))) ? (
+                  {isMinChargeApplied() ? (
                     <span className="text-[9px] text-amber-600 font-medium italic mt-1 text-right">
                       *Min 300km/day charge applies
                     </span>

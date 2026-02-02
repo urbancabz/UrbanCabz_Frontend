@@ -5,6 +5,7 @@ import {
     createFleetVehicle,
     updateFleetVehicle,
     deleteFleetVehicle,
+    uploadFleetImage,
 } from "../../services/fleetService";
 
 const CATEGORIES = ["SEDAN", "SUV", "LUXURY", "TRAVELER"];
@@ -16,6 +17,9 @@ export default function FleetManager() {
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
+    const [uploading, setUploading] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState("");
 
     const [form, setForm] = useState({
         name: "",
@@ -23,6 +27,7 @@ export default function FleetManager() {
         base_price_per_km: 12,
         category: "SEDAN",
         description: "",
+        image_url: "",
         is_active: true,
     });
 
@@ -46,10 +51,13 @@ export default function FleetManager() {
             base_price_per_km: 12,
             category: "SEDAN",
             description: "",
+            image_url: "",
             is_active: true,
         });
         setEditingVehicle(null);
         setShowForm(false);
+        setImageFile(null);
+        setImagePreview("");
     };
 
     const handleEdit = (vehicle) => {
@@ -59,10 +67,12 @@ export default function FleetManager() {
             base_price_per_km: vehicle.base_price_per_km,
             category: vehicle.category,
             description: vehicle.description || "",
+            image_url: vehicle.image_url || "",
             is_active: vehicle.is_active,
         });
         setEditingVehicle(vehicle);
         setShowForm(true);
+        setImagePreview(vehicle.image_url || "");
     };
 
     const handleSubmit = async (e) => {
@@ -202,6 +212,7 @@ export default function FleetManager() {
                                     />
                                 </div>
                             </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                                     Description (optional)
@@ -215,6 +226,35 @@ export default function FleetManager() {
                                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 outline-none"
                                     placeholder="e.g., Premium 7-seater SUV with AC"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                                    Vehicle Image (optional)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            setImageFile(file);
+                                            setImagePreview(URL.createObjectURL(file));
+                                            setUploading(true);
+                                            const res = await uploadFleetImage(file);
+                                            setUploading(false);
+                                            if (res.success) {
+                                                setForm({ ...form, image_url: res.data.image_url });
+                                            } else {
+                                                setMessage(res.message || "Failed to upload image");
+                                            }
+                                        }
+                                    }}
+                                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                />
+                                {uploading && <p className="text-xs text-indigo-600 mt-1">Uploading...</p>}
+                                {imagePreview && (
+                                    <img src={imagePreview} alt="Preview" className="mt-2 h-20 w-auto rounded-lg object-cover border border-slate-200" />
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                                 <input
@@ -270,25 +310,25 @@ export default function FleetManager() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {vehicles.map((vehicle) => (
+                    {vehicles.filter(v => v.is_active).map((vehicle) => (
                         <motion.div
                             key={vehicle.id}
                             layout
                             className={`bg-white border rounded-xl p-4 shadow-sm transition-all ${vehicle.is_active
-                                    ? "border-slate-200 hover:shadow-md"
-                                    : "border-slate-100 opacity-60"
+                                ? "border-slate-200 hover:shadow-md"
+                                : "border-slate-100 opacity-60"
                                 }`}
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <div>
                                     <span
                                         className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${vehicle.category === "LUXURY"
-                                                ? "bg-amber-100 text-amber-700"
-                                                : vehicle.category === "SUV"
-                                                    ? "bg-blue-100 text-blue-700"
-                                                    : vehicle.category === "TRAVELER"
-                                                        ? "bg-purple-100 text-purple-700"
-                                                        : "bg-slate-100 text-slate-600"
+                                            ? "bg-amber-100 text-amber-700"
+                                            : vehicle.category === "SUV"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : vehicle.category === "TRAVELER"
+                                                    ? "bg-purple-100 text-purple-700"
+                                                    : "bg-slate-100 text-slate-600"
                                             }`}
                                     >
                                         {vehicle.category}
@@ -304,6 +344,13 @@ export default function FleetManager() {
                             <h4 className="text-lg font-bold text-slate-900 mb-1">
                                 {vehicle.name}
                             </h4>
+                            {vehicle.image_url && (
+                                <img
+                                    src={vehicle.image_url}
+                                    alt={vehicle.name}
+                                    className="w-full h-24 object-cover rounded-lg mb-3"
+                                />
+                            )}
                             {vehicle.description && (
                                 <p className="text-xs text-slate-500 mb-3">
                                     {vehicle.description}

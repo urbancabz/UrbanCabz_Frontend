@@ -33,27 +33,27 @@ export default function BusinessProfile({ company }) {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10">
             <div>
-                <h2 className="text-2xl font-bold">Company Profile</h2>
-                <p className="text-gray-400">View your business account details and settings.</p>
+                <h2 className="text-2xl font-black tracking-tight text-white uppercase">Corporate Identity</h2>
+                <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-[0.2em]">View your business account details and settings.</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
                 {profileSections.map((section, idx) => (
-                    <div key={idx} className="bg-black border border-white/10 rounded-3xl overflow-hidden">
-                        <div className="p-6 border-b border-white/10 bg-white/5">
-                            <h3 className="font-bold text-lg">{section.title}</h3>
+                    <div key={idx} className="bg-neutral-950 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+                        <div className="p-6 border-b border-white/5 bg-white/5">
+                            <h3 className="text-xs font-black text-white uppercase tracking-widest">{section.title}</h3>
                         </div>
                         <div className="p-6 space-y-6">
                             {section.items.map((item, i) => (
                                 <div key={i} className="flex gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                                        <item.icon className="h-5 w-5 text-gray-400" />
+                                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                                        <item.icon className="h-5 w-5 text-zinc-400" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-1">{item.label}</p>
-                                        <p className="font-medium text-white">{item.value}</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest mb-1">{item.label}</p>
+                                        <p className="text-sm font-bold text-white tracking-tight">{item.value}</p>
                                     </div>
                                 </div>
                             ))}
@@ -62,20 +62,20 @@ export default function BusinessProfile({ company }) {
                 ))}
             </div>
 
-            <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-3xl p-6 flex flex-col md:flex-row items-center gap-6">
-                <div className="h-16 w-16 rounded-2xl bg-yellow-400 flex items-center justify-center shrink-0">
-                    <CalendarIcon className="h-8 w-8 text-black" />
+            <div className="bg-violet-500/5 border border-violet-500/10 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-inner">
+                <div className="h-16 w-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0 shadow-lg">
+                    <CalendarIcon className="h-8 w-8 text-violet-400" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                    <h4 className="text-lg font-bold">Account created on</h4>
-                    <p className="text-gray-400">
+                    <h4 className="text-sm font-black text-white uppercase tracking-widest mb-2">Account Genesis</h4>
+                    <p className="text-xs text-zinc-400 leading-relaxed uppercase tracking-tighter">
                         Your corporate account with Urban Cabz was initialized on
-                        <span className="text-white font-medium ml-1">
+                        <span className="text-violet-400 font-black ml-2">
                             {new Date(company.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}
                         </span>
                     </p>
                 </div>
-                <div className="px-6 py-2 rounded-xl bg-yellow-400 text-black font-bold text-sm">
+                <div className="px-8 py-3 rounded-2xl bg-violet-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-violet-600/20">
                     Active Partner
                 </div>
             </div>

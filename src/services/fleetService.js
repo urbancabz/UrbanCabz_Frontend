@@ -49,6 +49,27 @@ export async function fetchPublicFleet() {
 }
 
 /**
+ * Fetch global pricing settings
+ */
+export async function fetchPricingSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/pricing/public`, {
+            method: "GET",
+            headers: buildAuthHeaders(),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            return { success: false, message: data.message || "Failed to fetch settings" };
+        }
+        return { success: true, data: data.data };
+    } catch (error) {
+        console.error("Error fetching pricing settings:", error);
+        return { success: false, message: "Network error while fetching settings" };
+    }
+}
+
+
+/**
  * Fetch all fleet vehicles (admin endpoint)
  */
 export async function fetchFleetVehicles() {
@@ -147,5 +168,32 @@ export async function fetchMyFleet() {
     } catch (error) {
         console.error("Error fetching company fleet:", error);
         return { success: false, message: "Network error while fetching company fleet" };
+    }
+}
+
+/**
+ * Upload a fleet vehicle image
+ */
+export async function uploadFleetImage(file) {
+    try {
+        const token = getAuthToken();
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch(`${API_BASE_URL}/fleet/upload-image`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            return { success: false, message: data.message || "Failed to upload image" };
+        }
+        return { success: true, data: data.data, message: data.message };
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        return { success: false, message: "Network error while uploading image" };
     }
 }

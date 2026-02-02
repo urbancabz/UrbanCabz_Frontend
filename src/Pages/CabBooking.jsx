@@ -16,70 +16,55 @@ export default function CabBooking() {
   const rideType = state?.rideType || "airport";
 
   const [distanceKm, setDistanceKm] = useState(null);
+  const [activeListings, setActiveListings] = useState([]);
+  const [pricingSettings, setPricingSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const { fetchPublicFleet, fetchPricingSettings } = await import("../services/fleetService");
+
+      // Load both in parallel
+      const [fleetRes, pricingRes] = await Promise.all([
+        fetchPublicFleet(),
+        fetchPricingSettings()
+      ]);
+
+      if (pricingRes.success) {
+        setPricingSettings(pricingRes.data);
+      }
+
+      if (fleetRes.success) {
+        // Map API data to component format
+        const vehicleList = fleetRes.data.vehicles || [];
+        const mapped = vehicleList.map(v => ({
+          id: v.id,
+          name: v.name,
+          seats: v.seats,
+          bags: Math.floor(v.seats / 2),
+          basePrice: v.base_price_per_km,
+          tags: ["AC", "Comfortable", v.description],
+          rating: 4.8,
+          vehicleType: v.category,
+          image: v.image_url,
+        }));
+        setActiveListings(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load data:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDistanceCalculated = (metrics) => {
     setDistanceKm(metrics.distanceKm);
   };
-
-  // Vehicle listings with car images
-  const listings = [
-    {
-      id: 1,
-      name: "Swift Dzire",
-      seats: 4,
-      bags: 2,
-      basePrice: 13,
-      tags: ["AC", "Music System", "Comfortable"],
-      rating: 4.5,
-      vehicleType: "Sedan",
-      image: "/Dzire.avif",
-    },
-    {
-      id: 2,
-      name: "Toyota Etios",
-      seats: 4,
-      bags: 2,
-      basePrice: 13,
-      tags: ["AC", "Music System", "Comfortable"],
-      rating: 4.3,
-      vehicleType: "Sedan",
-      image: "/etios.jpeg",
-    },
-    {
-      id: 3,
-      name: "Toyota Innova Crysta",
-      seats: 7,
-      bags: 4,
-      basePrice: 22,
-      tags: ["Spacious", "AC", "Premium"],
-      rating: 4.7,
-      vehicleType: "SUV",
-      image: "/Inova.jpg",
-    },
-    {
-      id: 4,
-      name: "Toyota Innova hycross",
-      seats: 7,
-      bags: 4,
-      basePrice: 25,
-      tags: ["Spacious", "AC", "Premium"],
-      rating: 4.7,
-      vehicleType: "SUV",
-      image: "/Hycross.avif",
-    },
-    {
-      id: 5,
-      name: "Tempo traveler",
-      seats: 6,
-      bags: 3,
-      basePrice: 30,
-      tags: ["Family Car", "AC", "Spacious"],
-      rating: 4.4,
-      vehicleType: "LCV",
-      image: "traveller.webp",
-    },
-
-  ];
 
   return (
     <div className="pt-24 pb-12 bg-gray-50 min-h-screen">
@@ -134,19 +119,28 @@ export default function CabBooking() {
               </p>
             </div>
 
-            {listings.map((listing) => (
-              <CabListingCard
-                key={listing.id}
-                listing={listing}
-                from={from}
-                to={to}
-                distanceKm={distanceKm}
-                rideType={rideType}
-                pickupDate={pickupDate}
-                returnDate={returnDate}
-                pickupTime={pickupTime}
-              />
-            ))}
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-yellow-500" />
+              </div>
+            ) : activeListings.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">No vehicles available at the moment.</div>
+            ) : (
+              activeListings.map((listing) => (
+                <CabListingCard
+                  key={listing.id}
+                  listing={listing}
+                  from={from}
+                  to={to}
+                  distanceKm={distanceKm}
+                  rideType={rideType}
+                  pickupDate={pickupDate}
+                  returnDate={returnDate}
+                  pickupTime={pickupTime}
+                  pricingSettings={pricingSettings}
+                />
+              ))
+            )}
 
             <div className="bg-slate-900 text-white rounded-xl p-4 sm:p-5 border border-slate-800 shadow-lg">
               <div className="flex gap-3 sm:gap-4">

@@ -129,8 +129,8 @@ export default function B2BRequestsList() {
         <div className="p-6">
             {/* Header */}
             <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">B2B Registration Requests</h2>
-                <p className="text-neutral-400">Manage company registration requests</p>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">B2B Registration Requests</h2>
+                <p className="text-slate-500 font-medium">Manage company registration requests</p>
             </div>
 
             {/* Filters */}
@@ -140,9 +140,9 @@ export default function B2BRequestsList() {
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === status
-                                ? 'bg-yellow-400 text-black'
-                                : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                            className={`px-4 py-2 rounded-lg font-bold transition-colors ${filter === status
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             {status}
@@ -154,55 +154,55 @@ export default function B2BRequestsList() {
                     placeholder="Search by company or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-yellow-400"
+                    className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium"
                 />
             </div>
 
             {/* Requests Table */}
-            <div className="bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-neutral-900">
+                        <thead className="bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Company
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Contact
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Status
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Submitted
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-700">
+                        <tbody className="divide-y divide-slate-100">
                             {filteredRequests.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-neutral-400">
-                                        No B2B requests found
+                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-400 font-medium italic">
+                                        No request records found
                                     </td>
                                 </tr>
                             ) : (
                                 filteredRequests.map((request) => (
-                                    <tr key={request.id} className="hover:bg-neutral-750 transition-colors">
+                                    <tr key={request.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-white font-medium">{request.company_name}</div>
+                                            <div className="text-slate-900 font-bold">{request.company_name}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-neutral-300">{request.contact_name}</div>
-                                            <div className="text-neutral-500 text-sm">{request.contact_email}</div>
-                                            <div className="text-neutral-500 text-sm">{request.contact_phone}</div>
+                                            <div className="text-slate-700 font-bold text-sm">{request.contact_name}</div>
+                                            <div className="text-slate-500 text-xs">{request.contact_email}</div>
+                                            <div className="text-slate-500 text-xs">{request.contact_phone}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {getStatusBadge(request.status)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-neutral-400 text-sm">
+                                        <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs font-semibold">
                                             {new Date(request.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -211,13 +211,13 @@ export default function B2BRequestsList() {
                                                     <>
                                                         <button
                                                             onClick={() => handleApprove(request.id)}
-                                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                                                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors"
                                                         >
                                                             Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleReject(request.id)}
-                                                            className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                                                            className="px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors"
                                                         >
                                                             Reject
                                                         </button>
@@ -225,7 +225,7 @@ export default function B2BRequestsList() {
                                                 )}
                                                 <button
                                                     onClick={() => setSelectedRequest(request)}
-                                                    className="px-3 py-1 bg-neutral-700 text-white text-sm rounded-lg hover:bg-neutral-600 transition-colors"
+                                                    className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors"
                                                 >
                                                     View
                                                 </button>
@@ -241,54 +241,73 @@ export default function B2BRequestsList() {
 
             {/* Detail Modal */}
             {selectedRequest && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRequest(null)}>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedRequest(null)}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-neutral-800 rounded-xl border border-neutral-700 p-6 max-w-2xl w-full"
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-bold text-white">Request Details</h3>
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900">Request Details</h3>
+                                <p className="text-sm text-slate-500">Review company information</p>
+                            </div>
                             <button
                                 onClick={() => setSelectedRequest(null)}
-                                className="text-neutral-400 hover:text-white"
+                                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-neutral-400 text-sm">Company Name</label>
-                                <div className="text-white font-medium">{selectedRequest.company_name}</div>
-                            </div>
-                            <div>
-                                <label className="text-neutral-400 text-sm">Contact Person</label>
-                                <div className="text-white">{selectedRequest.contact_name}</div>
-                            </div>
-                            <div>
-                                <label className="text-neutral-400 text-sm">Email</label>
-                                <div className="text-white">{selectedRequest.contact_email}</div>
-                            </div>
-                            <div>
-                                <label className="text-neutral-400 text-sm">Phone</label>
-                                <div className="text-white">{selectedRequest.contact_phone}</div>
-                            </div>
-                            {selectedRequest.message && (
+                        <div className="space-y-5">
+                            <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="text-neutral-400 text-sm">Message</label>
-                                    <div className="text-white">{selectedRequest.message}</div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500">Company Name</label>
+                                    <div className="text-slate-900 font-bold mt-1">{selectedRequest.company_name}</div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500">Contact Person</label>
+                                    <div className="text-slate-900 font-bold mt-1">{selectedRequest.contact_name}</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-5">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500">Email</label>
+                                    <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_email}</div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500">Phone</label>
+                                    <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_phone}</div>
+                                </div>
+                            </div>
+
+                            {selectedRequest.message && (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-2">Message</label>
+                                    <div className="text-slate-700 text-sm">{selectedRequest.message}</div>
                                 </div>
                             )}
-                            <div>
-                                <label className="text-neutral-400 text-sm">Status</label>
-                                <div className="mt-1">{getStatusBadge(selectedRequest.status)}</div>
-                            </div>
-                            {selectedRequest.admin_notes && (
+
+                            <div className="grid grid-cols-2 gap-5 items-center">
                                 <div>
-                                    <label className="text-neutral-400 text-sm">Admin Notes</label>
-                                    <div className="text-white">{selectedRequest.admin_notes}</div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Status</label>
+                                    {getStatusBadge(selectedRequest.status)}
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Default Password</label>
+                                    <div className="text-indigo-600 font-mono font-bold bg-indigo-50 px-2 py-1 rounded inline-block text-xs border border-indigo-100">
+                                        UrbanCabz123
+                                    </div>
+                                </div>
+                            </div>
+
+                            {selectedRequest.admin_notes && (
+                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                                    <label className="text-[10px] font-bold uppercase text-yellow-700 block mb-1">Admin Notes</label>
+                                    <div className="text-yellow-800 text-sm">{selectedRequest.admin_notes}</div>
                                 </div>
                             )}
                         </div>

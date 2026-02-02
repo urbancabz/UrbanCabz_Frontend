@@ -134,6 +134,14 @@ const AppLayout = () => {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Only verify with backend if localStorage suggests we might be an admin
+    const userType = localStorage.getItem("userType");
+    if (userType !== "admin") {
+      setCheckingAdmin(false);
+      return;
+    }
+
     (async () => {
       try {
         const { fetchAdminMe } = await import("./services/adminService");

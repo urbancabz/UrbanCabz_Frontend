@@ -112,11 +112,29 @@ export default function CompanyDetails({ company, onClose }) {
         if (selectedMonth === "ALL") return allTimeStats;
         return {
             totalBilled: Math.round(monthlyBreakdown[selectedMonth]?.billed || 0),
-            totalPaid: Math.round(monthlyBreakdown[selectedMonth]?.paid || 0), // Note: Ledger payments aren't tied to months yet in this simple view
+            totalPaid: Math.round(monthlyBreakdown[selectedMonth]?.paid || 0),
             outstanding: Math.round((monthlyBreakdown[selectedMonth]?.billed || 0) - (monthlyBreakdown[selectedMonth]?.paid || 0)),
             totalBookings: monthlyBreakdown[selectedMonth]?.count || 0
         };
     }, [selectedMonth, allTimeStats, monthlyBreakdown]);
+
+    const filteredBookings = useMemo(() => {
+        if (selectedMonth === "ALL") return bookings;
+        return bookings.filter(b => {
+            const date = new Date(b.created_at);
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            return key === selectedMonth;
+        });
+    }, [bookings, selectedMonth]);
+
+    const filteredPayments = useMemo(() => {
+        if (selectedMonth === "ALL") return payments;
+        return payments.filter(p => {
+            const date = new Date(p.payment_date || p.paid_at || p.created_at);
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            return key === selectedMonth;
+        });
+    }, [payments, selectedMonth]);
 
     const availableMonths = Object.keys(monthlyBreakdown).sort().reverse();
 
@@ -247,6 +265,7 @@ export default function CompanyDetails({ company, onClose }) {
                                     <thead>
                                         <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
                                             <th className="pb-4 pl-2">Booking ID</th>
+                                            <th className="pb-4">Date & Time</th>
                                             <th className="pb-4">User</th>
                                             <th className="pb-4">Route</th>
                                             <th className="pb-4">Amount</th>
@@ -255,9 +274,15 @@ export default function CompanyDetails({ company, onClose }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {bookings.map(booking => (
+                                        {filteredBookings.map(booking => (
                                             <tr key={booking.id} className="text-sm font-medium text-slate-600 group hover:bg-slate-50/50 transition-colors">
                                                 <td className="py-4 pl-2 font-bold text-slate-900">#B2B-{booking.id}</td>
+                                                <td className="py-4 text-xs font-semibold text-slate-500">
+                                                    {new Date(booking.created_at).toLocaleString('en-IN', {
+                                                        day: '2-digit', month: 'short', year: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </td>
                                                 <td className="py-4">
                                                     <p className="text-xs font-bold">{booking.bookedByUser.name}</p>
                                                     <p className="text-[10px] text-slate-400">{booking.bookedByUser.email}</p>
@@ -297,9 +322,14 @@ export default function CompanyDetails({ company, onClose }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {payments.map(payment => (
+                                        {filteredPayments.map(payment => (
                                             <tr key={payment.id} className="text-sm font-medium text-slate-600">
-                                                <td className="py-4 pl-2 font-bold text-slate-900">{new Date(payment.payment_date).toLocaleDateString()}</td>
+                                                <td className="py-4 pl-2 font-bold text-slate-900">
+                                                    {new Date(payment.payment_date || payment.paid_at || payment.created_at).toLocaleString('en-IN', {
+                                                        day: '2-digit', month: 'short', year: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </td>
                                                 <td className="py-4 font-black text-emerald-600">₹{payment.amount.toLocaleString()}</td>
                                                 <td className="py-4">
                                                     <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">{payment.payment_mode}</span>
@@ -308,7 +338,7 @@ export default function CompanyDetails({ company, onClose }) {
                                                 <td className="py-4 text-xs text-slate-400 italic">{payment.notes || '-'}</td>
                                             </tr>
                                         ))}
-                                        {payments.length === 0 && (
+                                        {filteredPayments.length === 0 && (
                                             <tr>
                                                 <td colSpan="5" className="py-20 text-center text-slate-400 font-bold italic">No payment history available</td>
                                             </tr>

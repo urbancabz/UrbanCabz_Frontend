@@ -10,8 +10,10 @@ import {
     BanknotesIcon,
     DocumentTextIcon,
     CheckCircleIcon,
-    ExclamationCircleIcon
+    ExclamationCircleIcon,
+    ChevronRightIcon
 } from "@heroicons/react/24/outline";
+
 
 export default function BusinessBookings({ company }) {
     const [bookings, setBookings] = useState([]);
@@ -34,7 +36,7 @@ export default function BusinessBookings({ company }) {
         const months = new Set();
         bookings.forEach(b => {
             const date = new Date(b.scheduled_at || b.created_at);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const key = `${date.getFullYear()} -${String(date.getMonth() + 1).padStart(2, '0')} `;
             months.add(key);
         });
         return Array.from(months).sort().reverse();
@@ -45,7 +47,7 @@ export default function BusinessBookings({ company }) {
         if (selectedMonth === "all") return bookings;
         return bookings.filter(b => {
             const date = new Date(b.scheduled_at || b.created_at);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const key = `${date.getFullYear()} -${String(date.getMonth() + 1).padStart(2, '0')} `;
             return key === selectedMonth;
         });
     }, [bookings, selectedMonth]);
@@ -98,87 +100,80 @@ export default function BusinessBookings({ company }) {
     };
 
     return (
-        <div className="space-y-8">
-            {/* Page Header */}
-            <div className="pb-6 border-b border-white/10">
-                <h2 className="text-3xl font-bold tracking-tight">Company Bookings</h2>
-                <p className="text-gray-400 mt-1">View and manage all rides booked under <span className="text-yellow-400 font-medium">{company?.company_name}</span></p>
-            </div>
-
-            {/* Billing Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-white/10 rounded-3xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <DocumentTextIcon className="h-24 w-24 text-yellow-500" />
+        <div className="space-y-10">
+            {/* Page Header & Compact Stats */}
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-white/5">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="h-8 w-8 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                            <CalendarDaysIcon className="h-5 w-5 text-violet-400" />
+                        </div>
+                        <h2 className="text-2xl font-black tracking-tight text-white uppercase">Dispatch Logs</h2>
                     </div>
-                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Billed</p>
-                    <p className="text-3xl font-black mt-2 flex items-center">
-                        <CurrencyRupeeIcon className="h-7 w-7 mr-1" />
-                        {billingStats.totalBilled.toLocaleString('en-IN')}
+                    <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-[0.2em] pl-0.5">
+                        Operational oversight for <span className="text-violet-400">{company?.company_name}</span>
                     </p>
-                    <p className="text-sm text-gray-500 mt-2">{selectedMonth === "all" ? "All time" : formatMonthLabel(selectedMonth)}</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-900/30 to-green-800/10 border border-green-500/20 rounded-3xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <CheckCircleIcon className="h-24 w-24 text-green-500" />
-                    </div>
-                    <p className="text-xs text-green-400 uppercase font-bold tracking-wider">Amount Paid</p>
-                    <p className="text-3xl font-black mt-2 flex items-center text-green-400">
-                        <CurrencyRupeeIcon className="h-7 w-7 mr-1" />
-                        {billingStats.totalPaid.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-sm text-green-500/50 mt-2">Cleared payments</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-red-900/30 to-orange-800/10 border border-red-500/20 rounded-3xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <ExclamationCircleIcon className="h-24 w-24 text-red-500" />
-                    </div>
-                    <p className="text-xs text-red-400 uppercase font-bold tracking-wider">Amount Due</p>
-                    <p className="text-3xl font-black mt-2 flex items-center text-red-400">
-                        <CurrencyRupeeIcon className="h-7 w-7 mr-1" />
-                        {billingStats.amountDue.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-sm text-red-500/50 mt-2">Outstanding balance</p>
+                <div className="flex flex-wrap items-center gap-4 lg:gap-8 bg-neutral-900/50 backdrop-blur-md border border-white/5 p-4 lg:p-6 rounded-3xl shadow-xl">
+                    {[
+                        { label: 'Billed', value: billingStats.totalBilled, color: 'text-white' },
+                        { label: 'Settled', value: billingStats.totalPaid, color: 'text-emerald-400' },
+                        { label: 'Outstanding', value: billingStats.amountDue, color: 'text-rose-400' }
+                    ].map((stat) => (
+                        <div key={stat.label} className="min-w-[100px] lg:min-w-[120px]">
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">{stat.label}</p>
+                            <div className={`text-lg lg:text-xl font-black ${stat.color} flex items-center tracking-tighter`}>
+                                <CurrencyRupeeIcon className="h-4 w-4 lg:h-5 lg:h-5 mr-0.5 opacity-50" />
+                                {stat.value.toLocaleString('en-IN')}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Filters and Quick Stats Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-2xl p-4">
-                {/* Month Filter */}
-                <div className="flex items-center gap-3">
-                    <FunnelIcon className="h-5 w-5 text-gray-400" />
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-400 appearance-none cursor-pointer min-w-[180px]"
-                    >
-                        <option value="all">All Months</option>
-                        {monthOptions.map(month => (
-                            <option key={month} value={month}>{formatMonthLabel(month)}</option>
-                        ))}
-                    </select>
+            {/* Content Control Bar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-neutral-900/30 border border-white/5 rounded-3xl p-5 shadow-inner">
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-focus-within:border-violet-500/50 transition-colors">
+                        <FunnelIcon className="h-5 w-5 text-zinc-400" />
+                    </div>
+                    <div className="relative group">
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="bg-transparent text-sm font-black text-white hover:text-violet-400 transition-colors focus:outline-none appearance-none cursor-pointer pr-8 tracking-tight uppercase"
+                        >
+                            <option value="all" className="bg-neutral-900">Full Archive</option>
+                            {monthOptions.map(month => (
+                                <option key={month} value={month} className="bg-neutral-900">{formatMonthLabel(month)}</option>
+                            ))}
+                        </select>
+                        <ChevronRightIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 rotate-90 pointer-events-none group-hover:text-violet-400 transition-colors" />
+                    </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                        <span className="text-sm text-gray-400">Total Rides:</span>
-                        <span className="font-bold">{filteredBookings.length}</span>
+                <div className="flex flex-wrap items-center gap-6 lg:gap-10">
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-violet-500 ring-4 ring-violet-500/10"></div>
+                        <div>
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Queue</p>
+                            <p className="text-sm font-black text-white">{filteredBookings.length}</p>
+                        </div>
                     </div>
-                    <div className="h-6 w-px bg-white/10 hidden md:block" />
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                        <span className="text-sm text-gray-400">Completed:</span>
-                        <span className="font-bold">{filteredBookings.filter(b => b.status === "COMPLETED" || b.status === "PAID").length}</span>
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/10"></div>
+                        <div>
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Success</p>
+                            <p className="text-sm font-black text-white">{filteredBookings.filter(b => b.status === "COMPLETED" || b.status === "PAID").length}</p>
+                        </div>
                     </div>
-                    <div className="h-6 w-px bg-white/10 hidden md:block" />
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-400"></div>
-                        <span className="text-sm text-gray-400">Active:</span>
-                        <span className="font-bold">{filteredBookings.filter(b => b.status === "CONFIRMED" || b.status === "IN_PROGRESS").length}</span>
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 ring-4 ring-amber-500/10"></div>
+                        <div>
+                            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Active</p>
+                            <p className="text-sm font-black text-white">{filteredBookings.filter(b => b.status === "CONFIRMED" || b.status === "IN_PROGRESS").length}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -213,7 +208,7 @@ export default function BusinessBookings({ company }) {
                                                 <p className="text-xs text-gray-500">{booking.bookedByUser?.email}</p>
                                             </div>
                                         </div>
-                                        <span className={`px-4 py-1.5 rounded-full text-xs font-bold border ${getStatusColor(booking.status)}`}>
+                                        <span className={`px - 4 py - 1.5 rounded - full text - xs font - bold border ${getStatusColor(booking.status)} `}>
                                             {booking.status.replace('_', ' ')}
                                         </span>
                                     </div>
@@ -281,3 +276,4 @@ export default function BusinessBookings({ company }) {
         </div>
     );
 }
+

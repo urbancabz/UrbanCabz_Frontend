@@ -601,6 +601,8 @@ export async function getCompanyBookings() {
   }
 }
 
+// ... (existing functions)
+
 export async function bookBusinessRide(bookingData) {
   try {
     const token = localStorage.getItem('businessToken');
@@ -616,5 +618,52 @@ export async function bookBusinessRide(bookingData) {
   } catch (error) {
     console.error('bookBusinessRide error:', error);
     return { success: false, message: 'Network error booking business ride' };
+  }
+}
+
+/**
+ * Verify phone number with OTP
+ */
+export async function verifyPhone(userId, otp) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-phone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, otp }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Verification failed' };
+    }
+
+    // If verified successfully, we might get a token or auto-login logic might be needed
+    // Assuming backend returns success and frontend refreshes/logs in
+    return { success: true, message: data.message || 'Verified successfully' };
+  } catch (error) {
+    console.error('verifyPhone error:', error);
+    return { success: false, message: 'Network error verifying phone' };
+  }
+}
+
+/**
+ * Resend verification OTP
+ */
+export async function resendVerificationOtp(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Resend failed' };
+    }
+    return { success: true, message: data.message || 'OTP sent' };
+  } catch (error) {
+    console.error('resendVerificationOtp error:', error);
+    return { success: false, message: 'Network error resending OTP' };
   }
 }

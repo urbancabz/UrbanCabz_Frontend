@@ -12,6 +12,7 @@ import CompanyList from "../Components/Admin/CompanyList";
 import B2BDispatch from "../Components/Admin/B2BDispatch";
 import FleetManager from "../Components/Admin/FleetManager";
 import DriverList from "../Components/Admin/DriverList";
+import PricingSettings from "../Components/Admin/PricingSettings";
 
 import {
   fetchAdminBookings,
@@ -118,6 +119,7 @@ export default function AdminDashboard() {
       items: [
         { id: "FLEET", label: "Fleet Manager", icon: "🚕" },
         { id: "DRIVERS", label: "Driver Registry", icon: "👨‍✈️" },
+        { id: "PRICING", label: "Pricing Rules", icon: "💰" },
       ]
     }
   ];
@@ -255,6 +257,7 @@ export default function AdminDashboard() {
               {activeView === "COMPANIES" && <CompanyList />}
               {activeView === "FLEET" && <FleetManager />}
               {activeView === "DRIVERS" && <DriverList />}
+              {activeView === "PRICING" && <PricingSettings />}
 
               {["HISTORY", "CANCELLED", "PENDING"].includes(activeView) && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-10">
