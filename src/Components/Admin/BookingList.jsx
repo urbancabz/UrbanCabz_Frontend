@@ -12,16 +12,13 @@ export default function BookingList({
     const filteredTickets = useMemo(() => {
         let list = tickets;
 
-        // 1. Filter by Tab
         if (activeTab === "READY") {
-            // Phase 1: Ready = Not Assigned yet, and not finished
             list = list.filter(t =>
                 t.status !== "COMPLETED" &&
                 t.status !== "CANCELLED" &&
                 (!t.taxi_assign_status || t.taxi_assign_status === "NOT_ASSIGNED")
             );
         } else if (activeTab === "IN_TRIP") {
-            // Phase 2: In Trip = Driver assigned, and not finished
             list = list.filter(t =>
                 t.status !== "COMPLETED" &&
                 t.status !== "CANCELLED" &&
@@ -29,7 +26,6 @@ export default function BookingList({
             );
         }
 
-        // 2. Filter by Search
         if (searchQuery.trim()) {
             const lower = searchQuery.toLowerCase();
             list = list.filter(
@@ -45,51 +41,68 @@ export default function BookingList({
         return list;
     }, [tickets, activeTab, searchQuery]);
 
-    // Simplified 2-phase workflow: Ready → Trip Start
     const tabs = [
-        { id: "READY", label: "Ready", icon: "🟢" },        // Phase 1: Waiting for driver
-        { id: "IN_TRIP", label: "Trip Start", icon: "🚕" }, // Phase 2: Driver assigned, trip ongoing
+        { id: "READY", label: "Ready to Dispatch", icon: "🟢", count: tickets.filter(t => t.status !== "COMPLETED" && t.status !== "CANCELLED" && (!t.taxi_assign_status || t.taxi_assign_status === "NOT_ASSIGNED")).length },
+        { id: "IN_TRIP", label: "Active Trips", icon: "🚕", count: tickets.filter(t => t.status !== "COMPLETED" && t.status !== "CANCELLED" && t.taxi_assign_status === "ASSIGNED").length },
     ];
 
     return (
-        <div className="flex flex-col h-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            {/* Search & Filter Header */}
-            <div className="p-5 border-b border-slate-200 space-y-5 bg-slate-50/50">
-                <div className="relative group">
-                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+        <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50">
+            {/* Header */}
+            <div className="p-6 bg-white border-b border-slate-200/60">
+                <div className="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Live Dispatch</h2>
+                        <p className="text-sm font-medium text-slate-500 mt-1">Real-time booking management</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Live</span>
+                    </div>
+                </div>
+
+                {/* Search */}
+                <div className="relative group mb-5">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
                     <input
                         type="text"
-                        placeholder="Search ID, Name, or Route..."
+                        placeholder="Search by ID, customer, or location..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-base font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all"
                     />
                 </div>
 
-                <div className="flex gap-2 p-1 bg-slate-200/50 rounded-xl">
+                {/* Tabs */}
+                <div className="flex gap-3">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === tab.id
-                                ? "bg-white text-indigo-600 shadow-sm"
-                                : "text-slate-500 hover:text-slate-700 font-bold"
+                            className={`flex-1 py-4 px-5 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-3 ${activeTab === tab.id
+                                ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-[1.02]"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                                 }`}
                         >
-                            <span className="text-xs">{tab.icon}</span>
-                            <span>{tab.label}</span>
+                            <span className="text-xl">{tab.icon}</span>
+                            <span className="text-sm">{tab.label}</span>
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-black ${activeTab === tab.id ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+                                {tab.count}
+                            </span>
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 <AnimatePresence initial={false}>
                     {filteredTickets.map((ticket) => (
-                        <BookingListItem
+                        <BookingCard
                             key={ticket.id}
                             ticket={ticket}
                             isSelected={selectedId === ticket.id}
@@ -102,12 +115,9 @@ export default function BookingList({
                             animate={{ opacity: 1 }}
                             className="flex flex-col items-center justify-center py-20 text-slate-400"
                         >
-                            <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
-                                <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                            </div>
-                            <p className="text-sm font-black uppercase tracking-widest opacity-40">Zero Bookings</p>
+                            <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-5 text-4xl">🚕</div>
+                            <p className="text-lg font-bold text-slate-400">No bookings found</p>
+                            <p className="text-sm text-slate-400 mt-1">Waiting for new requests...</p>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -116,7 +126,7 @@ export default function BookingList({
     );
 }
 
-function BookingListItem({ ticket, isSelected, onClick }) {
+function BookingCard({ ticket, isSelected, onClick }) {
     const getAmounts = (b) => {
         const total = b.total_amount || 0;
         const paid = (b.payments || []).reduce((sum, p) =>
@@ -127,77 +137,86 @@ function BookingListItem({ ticket, isSelected, onClick }) {
     };
 
     const { total, paid, due } = getAmounts(ticket);
+    const isAssigned = ticket.taxi_assign_status === "ASSIGNED";
 
     return (
         <motion.button
             layout
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={onClick}
-            className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 group ${isSelected
-                ? "bg-indigo-50 border-indigo-500 shadow-md transform scale-[1.02]"
-                : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 shadow-sm"
+            className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 group ${isSelected
+                ? "bg-gradient-to-br from-indigo-600 to-indigo-700 border-indigo-500 shadow-xl shadow-indigo-500/30 transform scale-[1.02]"
+                : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100 hover:scale-[1.01]"
                 }`}
         >
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border shadow-sm ${isSelected ? "bg-indigo-600 text-white border-indigo-400" : "bg-slate-900 text-white border-slate-800"
-                        }`}>
+            {/* Header Row */}
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-xl font-black ${isSelected ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"}`}>
                         #{ticket.id}
-                    </span>
-                    <span className="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition-colors truncate max-w-[120px]">
-                        {ticket.user?.name || "Guest User"}
-                    </span>
+                    </div>
+                    <div>
+                        <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                            {ticket.user?.name || "Guest User"}
+                        </p>
+                        <p className={`text-sm ${isSelected ? "text-indigo-200" : "text-slate-500"}`}>
+                            {ticket.user?.phone || "No phone"}
+                        </p>
+                    </div>
                 </div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                    {new Date(ticket.created_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
-                </span>
+                <div className="text-right">
+                    <p className={`text-xs font-bold uppercase tracking-wider ${isSelected ? "text-indigo-200" : "text-slate-400"}`}>
+                        {new Date(ticket.created_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                    </p>
+                    <p className={`text-sm font-bold ${isSelected ? "text-white" : "text-slate-600"}`}>
+                        {new Date(ticket.scheduled_at || ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                </div>
             </div>
 
-            <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    <span className="truncate flex-1">{ticket.pickup_location.split(',')[0]}</span>
+            {/* Route */}
+            <div className={`rounded-xl p-4 mb-4 ${isSelected ? "bg-white/10" : "bg-slate-50"}`}>
+                <div className="flex items-start gap-3 mb-3">
+                    <div className="mt-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>
+                    <p className={`text-sm font-semibold leading-snug ${isSelected ? "text-white" : "text-slate-700"}`}>
+                        {ticket.pickup_location}
+                    </p>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                    <span className="truncate flex-1">{ticket.drop_location.split(',')[0]}</span>
+                <div className="flex items-start gap-3">
+                    <div className="mt-1.5 w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-500/20"></div>
+                    <p className={`text-sm font-semibold leading-snug ${isSelected ? "text-white" : "text-slate-700"}`}>
+                        {ticket.drop_location}
+                    </p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <div className="flex items-center gap-1.5">
+            {/* Footer */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className={`text-xl font-black ${isSelected ? "text-white" : "text-slate-900"}`}>
+                        ₹{total}
+                    </span>
                     {due > 0 ? (
-                        <span className="text-[9px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-widest">
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
                             ₹{due} DUE
                         </span>
                     ) : (
-                        <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-widest">
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
                             PAID
                         </span>
                     )}
-                    {stringToArray(ticket.car_model).length > 0 && (
-                        <span className="text-[9px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase tracking-tighter">
-                            🚕 {ticket.car_model.split(' ')[0]}
-                        </span>
-                    )}
                 </div>
-
-                {/* Status Badge */}
-                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm border ${ticket.status === "COMPLETED" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                        ticket.status === "CANCELLED" ? "bg-rose-50 text-rose-600 border-rose-100" :
-                            "bg-indigo-50 text-indigo-600 border-indigo-100"
+                <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider ${isAssigned
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                        : "bg-amber-100 text-amber-700 border border-amber-200"
                     }`}>
-                    {ticket.status === "IN_PROGRESS" ? "TRIP" :
-                        ticket.taxi_assign_status === "ASSIGNED" ? "READY" :
-                            ticket.status}
+                    {isAssigned ? "🚕 Ready" : "⏳ Pending"}
                 </span>
             </div>
         </motion.button>
     );
 }
 
-// Helper for safe splitting
 const stringToArray = (val) => val ? val.split(' ') : [];
-

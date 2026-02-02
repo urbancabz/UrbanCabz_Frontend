@@ -226,7 +226,7 @@ export default function AdminDashboard() {
           <div className="w-10"></div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 CustomScrollbar">
+        <div className={`flex-1 overflow-y-auto ${(activeView === "DISPATCH" || activeView === "B2B_DISPATCH") ? "p-2 lg:p-2" : "p-4 lg:p-8"} CustomScrollbar`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeView}
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="max-w-7xl mx-auto space-y-6"
+              className={`${(activeView === "DISPATCH" || activeView === "B2B_DISPATCH") ? "w-full" : "max-w-7xl mx-auto"} space-y-6 px-1`}
             >
               {activeView === "STATS" && <AdminStats summary={summary} />}
 

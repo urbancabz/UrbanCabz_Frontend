@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     upsertTaxiAssignment,
+    fetchAdminBookingTicket,
     updateBookingStatus,
     completeTrip,
     cancelBooking,
-    addBookingNote
+    getBookingNotes,
+    addBookingNote,
 } from "../../services/adminService";
 
 export default function BookingDetailView({
@@ -15,22 +17,68 @@ export default function BookingDetailView({
 }) {
     const [saving, setSaving] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
-    const [showCancelModal, setShowCancelModal] = useState(false);
-    const [showCompleteModal, setShowCompleteModal] = useState(false);
 
-    const [cancelReason, setCancelReason] = useState("");
-    const [completeForm, setCompleteForm] = useState({
-        actual_km: booking?.distance_km || 0,
-        toll_charges: 0,
-    });
+    // Assignment form
     const [assignForm, setAssignForm] = useState({
-        driverName: booking?.assign_taxis?.[0]?.driver_name || "",
-        driverNumber: booking?.assign_taxis?.[0]?.driver_number || "",
-        cabNumber: booking?.assign_taxis?.[0]?.cab_number || "",
-        cabName: booking?.assign_taxis?.[0]?.cab_name || (booking?.car_model || ""),
+        driverName: booking.assignments?.[0]?.driver_name || "",
+        driverNumber: booking.assignments?.[0]?.driver_number || "",
+        cabNumber: booking.assignments?.[0]?.cab_number || "",
+        cabName: booking.assignments?.[0]?.cab_name || booking.car_model || ""
     });
 
-    const getPaymentBreakdown = (b) => {
+    const handleAssignSubmit = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        const result = await upsertTaxiAssignment(booking.id, { ...assignForm, markAssigned: true });
+        setSaving(false);
+        if (result.success) {
+            setShowAssignModal(false);
+            onUpdate?.();
+        } else {
+            alert(result.message || "Failed to assign taxi");
+        }
+    };
+
+    const handleStartTrip = async () => {
+        if (!window.confirm("Start this ride?")) return;
+        setSaving(true);
+        const result = await updateBookingStatus(booking.id, "IN_PROGRESS");
+        setSaving(false);
+        if (result.success) onUpdate?.();
+    };
+
+    const handleCompleteTrip = async () => {
+        const actual_km = prompt("Enter actual KM driven:", booking.distance_km);
+        if (actual_km === null) return;
+
+        setSaving(true);
+        const result = await completeTrip(booking.id, { actual_km: parseFloat(actual_km) });
+        setSaving(false);
+        if (result.success) onUpdate?.();
+    };
+
+    const handleCancelBooking = async () => {
+        const reason = prompt("Reason for cancellation:");
+        if (!reason) return;
+
+        setSaving(true);
+        const result = await cancelBooking(booking.id, reason);
+        setSaving(false);
+        if (result.success) onUpdate?.();
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'COMPLETED': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+            case 'CANCELLED': return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+            case 'PAID': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+            case 'IN_PROGRESS': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+            case 'READY': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            default: return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+        }
+    };
+
+    const getAmounts = (b) => {
         const total = b.total_amount || 0;
         const paid = (b.payments || []).reduce((sum, p) =>
             (p.status === 'SUCCESS' || p.status === 'PAID') ? sum + (p.amount || 0) : sum, 0
@@ -39,314 +87,189 @@ export default function BookingDetailView({
         return { total, paid, due };
     };
 
-    const { total, paid, due } = getPaymentBreakdown(booking);
-
-    const handleAssignmentSubmit = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        const result = await upsertTaxiAssignment(booking.id, {
-            ...assignForm,
-            markAssigned: true
-        });
-        setSaving(false);
-        if (result.success) {
-            setShowAssignModal(false);
-            onUpdate?.();
-        } else {
-            alert(result.message || "Failed to save assignment");
-        }
-    };
-
-    const handleStartTrip = async () => {
-        if (!window.confirm("Start this trip?")) return;
-        setSaving(true);
-        const result = await updateBookingStatus(booking.id, "IN_PROGRESS", "Trip started by admin");
-        setSaving(false);
-        if (result.success) onUpdate?.();
-    };
-
-    const handleCompleteTrip = async () => {
-        setSaving(true);
-        const result = await completeTrip(booking.id, completeForm);
-        setSaving(false);
-        setShowCompleteModal(false);
-        if (result.success) {
-            alert(`Trip completed! Final: ₹${result.data.adjustments.new_total}`);
-            onUpdate?.();
-        }
-    };
-
-    const handleCancelBooking = async () => {
-        if (!cancelReason.trim()) return alert("Provide reason");
-        setSaving(true);
-        const result = await cancelBooking(booking.id, cancelReason);
-        setSaving(false);
-        setShowCancelModal(false);
-        if (result.success) onUpdate?.();
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
-            case 'PAID': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-            case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
-            default: return 'bg-amber-100 text-amber-700 border-amber-200';
-        }
-    };
+    const { total, paid, due } = getAmounts(booking);
 
     return (
         <>
-            {/* Top Right Floating Detail - Dispatch Command Center Style */}
             <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="fixed top-24 right-8 z-[60] w-80 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden"
+                className="fixed top-20 right-6 z-[60] w-[420px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden"
             >
-                <div className="p-5 bg-slate-900 text-white flex justify-between items-center">
-                    <div>
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-0.5">Dispatch Focus</span>
-                        <h4 className="text-sm font-black tracking-tight">Booking #{booking.id}</h4>
+                {/* Header */}
+                <div className="p-6 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <span className="text-xs font-black text-indigo-200 uppercase tracking-widest block mb-1">Active Focus</span>
+                            <h4 className="text-2xl font-black tracking-tight">Booking #{booking.id}</h4>
+                        </div>
+                        <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 transition-all font-bold text-lg backdrop-blur-sm">✕</button>
                     </div>
-                    <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all font-bold">✕</button>
                 </div>
 
-                <div className="p-5 space-y-5">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-lg shadow-sm">👤</div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-black text-slate-900 truncate leading-none mb-1">{booking.user?.name || "Guest User"}</p>
-                                <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{booking.user?.phone}</p>
+                <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
+                    {/* Customer Info */}
+                    <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+                        <div className="h-14 w-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-2xl border border-indigo-500/30">👤</div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-lg font-bold text-white truncate">{booking.user?.name || "Guest User"}</p>
+                            <p className="text-sm font-semibold text-slate-400">{booking.user?.phone || "—"}</p>
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                        </div>
+                    </div>
+
+                    {/* Route */}
+                    <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 space-y-4">
+                        <div className="flex items-start gap-4">
+                            <div className="mt-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 flex-shrink-0"></div>
+                            <div>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Pickup</span>
+                                <p className="text-sm font-bold text-white leading-snug">{booking.pickup_location}</p>
                             </div>
                         </div>
-
-                        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 space-y-3">
-                            <div className="flex items-start gap-2.5">
-                                <div className="mt-1 min-w-[6px] h-[6px] rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
-                                <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{booking.pickup_location}</p>
-                            </div>
-                            <div className="flex items-start gap-2.5">
-                                <div className="mt-1 min-w-[6px] h-[6px] rounded-full bg-rose-500 ring-4 ring-rose-100"></div>
-                                <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{booking.drop_location}</p>
+                        <div className="ml-2 border-l-2 border-dashed border-slate-600 h-4"></div>
+                        <div className="flex items-start gap-4">
+                            <div className="mt-1.5 w-4 h-4 rounded-full bg-rose-500 ring-4 ring-rose-500/20 flex-shrink-0"></div>
+                            <div>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Drop-off</span>
+                                <p className="text-sm font-bold text-white leading-snug">{booking.drop_location}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between px-1">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Financial Status</span>
-                            <div className="flex bg-slate-50 border border-slate-100 rounded text-[10px] font-bold overflow-hidden">
-                                <span className="px-2 py-0.5 border-r border-slate-100">Paid: ₹{paid}</span>
-                                <span className={`px-2 py-0.5 ${due > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
-                                    {due > 0 ? `Due: ₹${due}` : "Settled"}
-                                </span>
-                            </div>
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 text-center">
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Total</span>
+                            <p className="text-xl font-black text-white">₹{total}</p>
                         </div>
-                        <div className="text-right">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Live Status</span>
-                            <div className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${getStatusColor(booking.status)}`}>
-                                {booking.status === 'PENDING_PAYMENT' && paid > 0 ? 'PARTIAL PAID' : booking.status}
-                            </div>
+                        <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center">
+                            <span className="text-xs font-black text-emerald-400 uppercase tracking-widest block mb-1">Paid</span>
+                            <p className="text-xl font-black text-emerald-400">₹{paid}</p>
+                        </div>
+                        <div className={`p-4 rounded-2xl border text-center ${due > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-slate-800/50 border-slate-700/50"}`}>
+                            <span className={`text-xs font-black uppercase tracking-widest block mb-1 ${due > 0 ? "text-amber-400" : "text-slate-500"}`}>Due</span>
+                            <p className={`text-xl font-black ${due > 0 ? "text-amber-400" : "text-slate-500"}`}>₹{due}</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                        {/* Allow dispatch if Paid OR (Pending Payment with actual amount paid) */}
-                        {(booking.status === "PAID" || (booking.status === "PENDING_PAYMENT" && paid > 0)) && (
-                            <button
-                                onClick={() => setShowAssignModal(true)}
-                                className="col-span-2 py-3.5 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-                            >
-                                Dispatch Driver 🚕
+                    {/* Action Buttons */}
+                    <div className="space-y-3 pt-4 border-t border-slate-700/50">
+                        {booking.status === "CONFIRMED" && (
+                            <button onClick={() => setShowAssignModal(true)} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:from-indigo-500 hover:to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all">
+                                {booking.taxi_assign_status === "ASSIGNED" ? "Update Driver 🚕" : "Dispatch Driver 🚕"}
                             </button>
                         )}
-                        {(booking.status === "PAID" || (booking.status === "PENDING_PAYMENT" && paid > 0)) && booking.assign_taxis?.[0] && (
-                            <button onClick={handleStartTrip} className="col-span-2 py-3.5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
-                                Start Expedition
+                        {booking.taxi_assign_status === "ASSIGNED" && booking.status === "CONFIRMED" && (
+                            <button onClick={handleStartTrip} disabled={saving} className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30">
+                                Start Trip ▶️
                             </button>
                         )}
                         {booking.status === "IN_PROGRESS" && (
-                            <button onClick={() => setShowCompleteModal(true)} className="col-span-2 py-3.5 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-600/20">
-                                Complete Ride
+                            <button onClick={handleCompleteTrip} disabled={saving} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-500/30">
+                                Complete Trip ✅
                             </button>
                         )}
-                        <button
-                            onClick={() => setShowCancelModal(true)}
-                            className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
-                        >
-                            Void Booking
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
-                        >
-                            Minimize
-                        </button>
 
-                        {/* Quick WhatsApp Actions (Post-Assignment) */}
-                        {booking.assign_taxis?.[0] && (
-                            <div className="col-span-2 grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-slate-100">
+                        {/* WhatsApp Quick Actions */}
+                        {booking.assignments?.[0] && (
+                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-700/50">
                                 <button
                                     onClick={() => {
                                         const phone = (booking.user?.phone || "").replace(/\D/g, "");
-                                        const taxi = booking.assign_taxis[0];
+                                        const taxi = booking.assignments[0];
                                         const msg = encodeURIComponent(
                                             `🚕 *UrbanCabz Booking Confirmed*\n\n` +
                                             `Booking ID: #${booking.id}\n` +
                                             `---------------------\n` +
                                             `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
                                             `👤 Driver: ${taxi.driver_name}\n` +
-                                            `📞 Driver Contact: ${taxi.driver_number}\n` +
+                                            `📞 Driver: ${taxi.driver_number}\n` +
                                             `---------------------\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📅 Date: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
-                                            `💰 Fare: ₹${booking.total_amount}\n\n` +
+                                            `📅 Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n\n` +
                                             `Thank you for choosing UrbanCabz! 🙏`
                                         );
                                         window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
                                     }}
-                                    className="py-2.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                    className="py-3.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2"
                                 >
-                                    <span>📱</span> Client WA
+                                    📱 Client WA
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const taxi = booking.assign_taxis[0];
+                                        const taxi = booking.assignments[0];
                                         const phone = (taxi.driver_number || "").replace(/\D/g, "");
                                         const msg = encodeURIComponent(
-                                            `🚕 *UrbanCabz New Booking*\n\n` +
+                                            `🚕 *UrbanCabz Pickup Request*\n\n` +
                                             `Booking ID: #${booking.id}\n` +
                                             `---------------------\n` +
                                             `👤 Customer: ${booking.user?.name || "Guest"}\n` +
-                                            `📞 Customer Contact: ${booking.user?.phone}\n` +
+                                            `📞 Customer: ${booking.user?.phone}\n` +
                                             `---------------------\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📅 Pickup Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
+                                            `📅 Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
                                             `📏 Distance: ${booking.distance_km} km\n\n` +
-                                            `Please reach the pickup location on time. 🙏`
+                                            `Please reach on time. 🙏`
                                         );
                                         window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
                                     }}
-                                    className="py-2.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                    className="py-3.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2"
                                 >
-                                    <span>📱</span> Driver WA
+                                    📱 Driver WA
                                 </button>
                             </div>
                         )}
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button onClick={handleCancelBooking} className="py-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all">Cancel</button>
+                            <button onClick={onClose} className="py-3 bg-slate-700/50 text-slate-400 border border-slate-600/50 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all">Minimize</button>
+                        </div>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Modals */}
+            {/* Assignment Modal */}
             <AnimatePresence>
                 {showAssignModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
-                            <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
-                                <h3 className="text-xl font-black">Dispatch Assignment 🚕</h3>
-                                <button onClick={() => setShowAssignModal(false)}>✕</button>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-700">
+                            <div className="p-6 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-xl font-black tracking-tight">Assign Driver 🚕</h3>
+                                    <p className="text-xs text-indigo-200 uppercase font-bold tracking-widest mt-1">Booking #{booking.id}</p>
+                                </div>
+                                <button onClick={() => setShowAssignModal(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 transition-all font-bold backdrop-blur-sm">✕</button>
                             </div>
-                            <form onSubmit={handleAssignmentSubmit} className="p-6 space-y-4">
+
+                            <form onSubmit={handleAssignSubmit} className="p-6 space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
-                                    {['driverName', 'driverNumber', 'cabName', 'cabNumber'].map(field => (
-                                        <div key={field} className="space-y-1">
-                                            <label className="text-[10px] uppercase font-black text-slate-500">{field.replace(/([A-Z])/g, ' $1')}</label>
-                                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={assignForm[field]} onChange={e => setAssignForm({ ...assignForm, [field]: e.target.value })} required />
-                                        </div>
-                                    ))}
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Driver Name</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all placeholder-slate-500" placeholder="Enter name" value={assignForm.driverName} onChange={e => setAssignForm({ ...assignForm, driverName: e.target.value })} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Driver Phone</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all placeholder-slate-500" placeholder="Phone number" value={assignForm.driverNumber} onChange={e => setAssignForm({ ...assignForm, driverNumber: e.target.value })} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Vehicle Model</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all placeholder-slate-500" placeholder="e.g. Innova" value={assignForm.cabName} onChange={e => setAssignForm({ ...assignForm, cabName: e.target.value })} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Vehicle Plate</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all placeholder-slate-500" placeholder="Plate number" value={assignForm.cabNumber} onChange={e => setAssignForm({ ...assignForm, cabNumber: e.target.value })} required />
+                                    </div>
                                 </div>
-                                <button type="submit" disabled={saving} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20">
-                                    Confirm Dispatch
+
+                                <button type="submit" disabled={saving} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:from-indigo-500 hover:to-indigo-600 transition-all">
+                                    {saving ? "Processing..." : "Assign & Confirm ✅"}
                                 </button>
-
-                                {/* WhatsApp Quick Actions */}
-                                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const phone = (booking.user?.phone || "").replace(/\D/g, "");
-                                            const msg = encodeURIComponent(
-                                                `🚕 *UrbanCabz Booking Confirmed*\n\n` +
-                                                `Booking ID: #${booking.id}\n` +
-                                                `---------------------\n` +
-                                                `🚘 Vehicle: ${assignForm.cabName} (${assignForm.cabNumber})\n` +
-                                                `👤 Driver: ${assignForm.driverName}\n` +
-                                                `📞 Driver Contact: ${assignForm.driverNumber}\n` +
-                                                `---------------------\n` +
-                                                `📍 Pickup: ${booking.pickup_location}\n` +
-                                                `🏁 Drop: ${booking.drop_location}\n` +
-                                                `📅 Date: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
-                                                `💰 Fare: ₹${booking.total_amount}\n\n` +
-                                                `Thank you for choosing UrbanCabz! 🙏`
-                                            );
-                                            window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
-                                        }}
-                                        className="py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 flex items-center justify-center gap-2"
-                                    >
-                                        <span>📱</span> WhatsApp to Client
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const phone = (assignForm.driverNumber || "").replace(/\D/g, "");
-                                            const msg = encodeURIComponent(
-                                                `🚕 *UrbanCabz New Booking*\n\n` +
-                                                `Booking ID: #${booking.id}\n` +
-                                                `---------------------\n` +
-                                                `👤 Customer: ${booking.user?.name || "Guest"}\n` +
-                                                `📞 Customer Contact: ${booking.user?.phone}\n` +
-                                                `---------------------\n` +
-                                                `📍 Pickup: ${booking.pickup_location}\n` +
-                                                `🏁 Drop: ${booking.drop_location}\n` +
-                                                `📅 Pickup Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
-                                                `📏 Distance: ${booking.distance_km} km\n\n` +
-                                                `Please reach the pickup location on time. 🙏`
-                                            );
-                                            window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
-                                        }}
-                                        className="py-3 bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 flex items-center justify-center gap-2"
-                                    >
-                                        <span>📱</span> WhatsApp to Driver
-                                    </button>
-                                </div>
                             </form>
-                        </motion.div>
-                    </div>
-                )}
-
-                {/* Cancel Modal */}
-                {showCancelModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm">
-                            <h3 className="text-lg font-black text-rose-600 mb-4">Cancel Trip?</h3>
-                            <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold mb-4" rows={3} placeholder="Reason for cancellation..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
-                            <div className="flex gap-3">
-                                <button onClick={handleCancelBooking} className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase">Confirm</button>
-                                <button onClick={() => setShowCancelModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase">Back</button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-
-                {/* Complete Modal */}
-                {showCompleteModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm">
-                            <h3 className="text-lg font-black text-indigo-600 mb-4">Complete Trip</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase">Actual Km Run</label>
-                                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={completeForm.actual_km} onChange={e => setCompleteForm({ ...completeForm, actual_km: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase">Toll / Parking</label>
-                                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" value={completeForm.toll_charges} onChange={e => setCompleteForm({ ...completeForm, toll_charges: e.target.value })} />
-                                </div>
-                                <button onClick={handleCompleteTrip} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase">Complete & Calculate</button>
-                            </div>
                         </motion.div>
                     </div>
                 )}

@@ -82,12 +82,12 @@ export default function B2BBookingDetailView({
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
-            case 'PAID': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-            case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
-            case 'READY': return 'bg-blue-100 text-blue-700 border-blue-200';
-            default: return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'COMPLETED': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+            case 'CANCELLED': return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+            case 'PAID': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+            case 'IN_PROGRESS': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+            case 'READY': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            default: return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
         }
     };
 
@@ -96,78 +96,89 @@ export default function B2BBookingDetailView({
             <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="fixed top-24 right-8 z-[60] w-80 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden"
+                className="fixed top-20 right-6 z-[60] w-[420px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 rounded-3xl shadow-2xl overflow-hidden"
             >
-                <div className="p-5 bg-slate-900 text-white flex justify-between items-center">
-                    <div>
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-0.5">Corporate Focus</span>
-                        <h4 className="text-sm font-black tracking-tight">Booking #{booking.id}</h4>
+                {/* Header */}
+                <div className="p-6 bg-gradient-to-r from-purple-600 to-purple-500 text-white">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <span className="text-xs font-black text-purple-200 uppercase tracking-widest block mb-1">Corporate Focus</span>
+                            <h4 className="text-2xl font-black tracking-tight">Booking #{booking.id}</h4>
+                        </div>
+                        <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 transition-all font-bold text-lg backdrop-blur-sm">✕</button>
                     </div>
-                    <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all font-bold">✕</button>
                 </div>
 
-                <div className="p-5 space-y-5">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-lg shadow-sm">🏢</div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-black text-slate-900 truncate leading-none mb-1">{booking.company?.company_name}</p>
-                                <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{booking.passenger_details?.name} ({booking.passenger_details?.phone})</p>
+                <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
+                    {/* Company Info */}
+                    <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+                        <div className="h-14 w-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-2xl border border-purple-500/30">🏢</div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-lg font-bold text-white truncate">{booking.company?.company_name || "Corporate Partner"}</p>
+                            <p className="text-sm font-semibold text-slate-400">👤 {booking.passenger_details?.name || "Employee"} • {booking.passenger_details?.phone}</p>
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                        </div>
+                    </div>
+
+                    {/* Route */}
+                    <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 space-y-4">
+                        <div className="flex items-start gap-4">
+                            <div className="mt-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 flex-shrink-0"></div>
+                            <div>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Pickup</span>
+                                <p className="text-sm font-bold text-white leading-snug">{booking.pickup_location}</p>
                             </div>
                         </div>
-
-                        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 space-y-3">
-                            <div className="flex items-start gap-2.5">
-                                <div className="mt-1.5 min-w-[6px] h-[6px] rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
-                                <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{booking.pickup_location}</p>
-                            </div>
-                            <div className="flex items-start gap-2.5">
-                                <div className="mt-1.5 min-w-[6px] h-[6px] rounded-full bg-rose-500 ring-4 ring-rose-100"></div>
-                                <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{booking.drop_location}</p>
+                        <div className="ml-2 border-l-2 border-dashed border-slate-600 h-4"></div>
+                        <div className="flex items-start gap-4">
+                            <div className="mt-1.5 w-4 h-4 rounded-full bg-rose-500 ring-4 ring-rose-500/20 flex-shrink-0"></div>
+                            <div>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Drop-off</span>
+                                <p className="text-sm font-bold text-white leading-snug">{booking.drop_location}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between px-1">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Fare (Company)</span>
-                            <div className="text-[10px] font-black text-slate-900">₹{booking.total_amount}</div>
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 text-center">
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Fare</span>
+                            <p className="text-2xl font-black text-white">₹{booking.total_amount || 0}</p>
                         </div>
-                        <div className="text-right">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</span>
-                            <div className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${getStatusColor(booking.status)}`}>
-                                {booking.status}
-                            </div>
+                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 text-center">
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Distance</span>
+                            <p className="text-2xl font-black text-white">{booking.distance_km} km</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                    {/* Action Buttons */}
+                    <div className="space-y-3 pt-4 border-t border-slate-700/50">
                         {booking.status === "CONFIRMED" && (
-                            <button onClick={() => setShowAssignModal(true)} className="col-span-2 py-3.5 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                            <button onClick={() => setShowAssignModal(true)} className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:from-purple-500 hover:to-purple-600 shadow-lg shadow-purple-500/30 transition-all">
                                 {booking.taxi_assign_status === "ASSIGNED" ? "Update Driver 🚕" : "Dispatch Driver 🚕"}
                             </button>
                         )}
                         {booking.taxi_assign_status === "ASSIGNED" && booking.status === "CONFIRMED" && (
-                            <button onClick={handleStartTrip} disabled={saving} className="col-span-2 py-3.5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
-                                Start Expedition
+                            <button onClick={handleStartTrip} disabled={saving} className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30">
+                                Start Expedition ▶️
                             </button>
                         )}
                         {booking.status === "IN_PROGRESS" && (
-                            <button onClick={handleCompleteTrip} disabled={saving} className="col-span-2 py-3.5 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-600/20">
-                                Complete Entry
+                            <button onClick={handleCompleteTrip} disabled={saving} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-500/30">
+                                Complete Entry ✅
                             </button>
                         )}
                         {booking.status === "COMPLETED" && booking.payment_status !== "PAID" && (
-                            <button onClick={() => setShowPaymentModal(true)} className="col-span-2 py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95">
+                            <button onClick={() => setShowPaymentModal(true)} className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-amber-500/30">
                                 Financial Resolution 💰
                             </button>
                         )}
-                        <button onClick={handleCancelBooking} className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all">Cancel</button>
-                        <button onClick={onClose} className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Minimize</button>
 
-                        {/* WhatsApp Quick Actions (Post-Assignment) */}
+                        {/* WhatsApp Quick Actions */}
                         {booking.assignments?.[0] && (
-                            <div className="col-span-2 grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-slate-100">
+                            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-700/50">
                                 <button
                                     onClick={() => {
                                         const phone = (booking.passenger_details?.phone || "").replace(/\D/g, "");
@@ -179,18 +190,18 @@ export default function B2BBookingDetailView({
                                             `---------------------\n` +
                                             `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
                                             `👤 Driver: ${taxi.driver_name}\n` +
-                                            `📞 Driver Contact: ${taxi.driver_number}\n` +
+                                            `📞 Driver: ${taxi.driver_number}\n` +
                                             `---------------------\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📅 Pickup Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n\n` +
+                                            `📅 Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n\n` +
                                             `Thank you for choosing UrbanCabz! 🙏`
                                         );
                                         window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
                                     }}
-                                    className="py-2.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                    className="py-3.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2"
                                 >
-                                    <span>📱</span> Client WA
+                                    📱 Client WA
                                 </button>
                                 <button
                                     onClick={() => {
@@ -202,22 +213,27 @@ export default function B2BBookingDetailView({
                                             `Company: ${booking.company?.company_name}\n` +
                                             `---------------------\n` +
                                             `👤 Passenger: ${booking.passenger_details?.name || "Employee"}\n` +
-                                            `📞 Passenger Contact: ${booking.passenger_details?.phone}\n` +
+                                            `📞 Passenger: ${booking.passenger_details?.phone}\n` +
                                             `---------------------\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📅 Pickup Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
+                                            `📅 Time: ${new Date(booking.scheduled_at || booking.created_at).toLocaleString()}\n` +
                                             `📏 Distance: ${booking.distance_km} km\n\n` +
-                                            `Please reach the pickup location on time. 🙏`
+                                            `Please reach on time. 🙏`
                                         );
                                         window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
                                     }}
-                                    className="py-2.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                    className="py-3.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2"
                                 >
-                                    <span>📱</span> Driver WA
+                                    📱 Driver WA
                                 </button>
                             </div>
                         )}
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button onClick={handleCancelBooking} className="py-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all">Cancel</button>
+                            <button onClick={onClose} className="py-3 bg-slate-700/50 text-slate-400 border border-slate-600/50 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-all">Minimize</button>
+                        </div>
                     </div>
                 </div>
             </motion.div>
@@ -225,38 +241,38 @@ export default function B2BBookingDetailView({
             {/* Assignment Modal */}
             <AnimatePresence>
                 {showAssignModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-                            <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-700">
+                            <div className="p-6 bg-gradient-to-r from-purple-600 to-purple-500 text-white flex justify-between items-center">
                                 <div>
-                                    <h3 className="text-xl font-black tracking-tight">Assign Dispatch 🚕</h3>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1">Corporate Dispatch</p>
+                                    <h3 className="text-xl font-black tracking-tight">Assign Driver 🚕</h3>
+                                    <p className="text-xs text-purple-200 uppercase font-bold tracking-widest mt-1">Corporate Dispatch</p>
                                 </div>
-                                <button onClick={() => setShowAssignModal(false)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all font-bold">✕</button>
+                                <button onClick={() => setShowAssignModal(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 transition-all font-bold backdrop-blur-sm">✕</button>
                             </div>
 
                             <form onSubmit={handleAssignSubmit} className="p-6 space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Driver Name</label>
-                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Enter name" value={assignForm.driverName} onChange={e => setAssignForm({ ...assignForm, driverName: e.target.value })} required />
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Driver Name</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-purple-500/30 outline-none transition-all placeholder-slate-500" placeholder="Enter name" value={assignForm.driverName} onChange={e => setAssignForm({ ...assignForm, driverName: e.target.value })} required />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Driver Phone</label>
-                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Contact number" value={assignForm.driverNumber} onChange={e => setAssignForm({ ...assignForm, driverNumber: e.target.value })} required />
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Driver Phone</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-purple-500/30 outline-none transition-all placeholder-slate-500" placeholder="Phone number" value={assignForm.driverNumber} onChange={e => setAssignForm({ ...assignForm, driverNumber: e.target.value })} required />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Vehicle Model</label>
-                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="e.g. Innova" value={assignForm.cabName} onChange={e => setAssignForm({ ...assignForm, cabName: e.target.value })} required />
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Vehicle Model</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-purple-500/30 outline-none transition-all placeholder-slate-500" placeholder="e.g. Innova" value={assignForm.cabName} onChange={e => setAssignForm({ ...assignForm, cabName: e.target.value })} required />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Vehicle Plate</label>
-                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Plate number" value={assignForm.cabNumber} onChange={e => setAssignForm({ ...assignForm, cabNumber: e.target.value })} required />
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Vehicle Plate</label>
+                                        <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-purple-500/30 outline-none transition-all placeholder-slate-500" placeholder="Plate number" value={assignForm.cabNumber} onChange={e => setAssignForm({ ...assignForm, cabNumber: e.target.value })} required />
                                     </div>
                                 </div>
 
-                                <button type="submit" disabled={saving} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-1 transition-all">
-                                    {saving ? "Processing..." : "Assign & Confirm"}
+                                <button type="submit" disabled={saving} className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-purple-500/30 hover:from-purple-500 hover:to-purple-600 transition-all">
+                                    {saving ? "Processing..." : "Assign & Confirm ✅"}
                                 </button>
                             </form>
                         </motion.div>
@@ -267,28 +283,28 @@ export default function B2BBookingDetailView({
             {/* Payment Modal */}
             <AnimatePresence>
                 {showPaymentModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
-                            <div className="p-4 bg-amber-500 text-white flex justify-between items-center">
-                                <h3 className="text-sm font-black uppercase tracking-widest">Financial Resolution</h3>
-                                <button onClick={() => setShowPaymentModal(false)}>✕</button>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-700">
+                            <div className="p-5 bg-gradient-to-r from-amber-500 to-amber-400 text-white flex justify-between items-center">
+                                <h3 className="text-lg font-black tracking-tight">Financial Resolution 💰</h3>
+                                <button onClick={() => setShowPaymentModal(false)} className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-all font-bold">✕</button>
                             </div>
-                            <form onSubmit={handleMarkPaid} className="p-6 space-y-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-black text-slate-500">Method</label>
-                                    <select value={paymentForm.mode} onChange={e => setPaymentForm({ ...paymentForm, mode: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500/20">
+                            <form onSubmit={handleMarkPaid} className="p-6 space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Payment Method</label>
+                                    <select value={paymentForm.mode} onChange={e => setPaymentForm({ ...paymentForm, mode: e.target.value })} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white focus:ring-2 focus:ring-amber-500/30 outline-none transition-all">
                                         <option value="Cash">Cash</option>
                                         <option value="Bank Transfer">NEFT/RTGS</option>
                                         <option value="UPI">UPI / Digital</option>
                                         <option value="Cheque">Corporate Cheque</option>
                                     </select>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-black text-slate-500">Transaction Notes</label>
-                                    <textarea value={paymentForm.remarks} onChange={e => setPaymentForm({ ...paymentForm, remarks: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold min-h-[80px] outline-none focus:ring-2 focus:ring-amber-500/20" />
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase font-black text-slate-500 tracking-widest">Transaction Notes</label>
+                                    <textarea value={paymentForm.remarks} onChange={e => setPaymentForm({ ...paymentForm, remarks: e.target.value })} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-base font-bold text-white min-h-[100px] focus:ring-2 focus:ring-amber-500/30 outline-none transition-all placeholder-slate-500" placeholder="Optional notes..." />
                                 </div>
-                                <button type="submit" disabled={saving} className="w-full py-4 bg-amber-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-amber-500/20">
-                                    {saving ? "Saving..." : "Clear Outstanding"}
+                                <button type="submit" disabled={saving} className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-amber-500/30">
+                                    {saving ? "Saving..." : "Clear Outstanding ✅"}
                                 </button>
                             </form>
                         </motion.div>
