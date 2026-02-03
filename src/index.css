@@ -24,14 +24,16 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e2e8f0; /* slate-200 */
+  background: #e2e8f0;
+  /* slate-200 */
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1; /* slate-300 */
+  background: #cbd5e1;
+  /* slate-300 */
   background-clip: content-box;
 }
 
@@ -43,11 +45,26 @@ html {
 
 /* Custom Scrollbar for dark components/containers */
 .CustomScrollbar::-webkit-scrollbar-thumb {
-  background: #475569; /* slate-600 for dark/admin areas */
+  background: #475569;
+  /* slate-600 for dark/admin areas */
   background-clip: content-box;
 }
 
 .CustomScrollbar::-webkit-scrollbar-thumb:hover {
-  background: #334155; /* slate-700 */
+  background: #334155;
+  /* slate-700 */
   background-clip: content-box;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }

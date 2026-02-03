@@ -4,7 +4,7 @@ import Section02 from "../Components/LandingPageSection/Section02/Section02"
 
 export default function LandingPage() {
   return (
-    <div>
+    <div className="no-scrollbar overflow-y-auto h-screen">
       <Section01 />
       <Section02 />
     </div>

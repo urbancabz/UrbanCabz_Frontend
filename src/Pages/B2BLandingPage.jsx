@@ -11,7 +11,7 @@ export default function B2BLandingPage() {
   }, []);
 
   return (
-    <div className="bg-black min-h-screen text-white">
+    <div className="bg-black min-h-screen text-white no-scrollbar overflow-y-auto h-screen">
       <Section01 />
       <Services />
       <Process />
