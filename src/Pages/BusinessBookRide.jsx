@@ -14,6 +14,7 @@ export default function BusinessBookRide() {
     const [fleet, setFleet] = useState([]);
     const [loadingFleet, setLoadingFleet] = useState(false);
     const [distanceKm, setDistanceKm] = useState(null);
+    const [pricingSettings, setPricingSettings] = useState(null);
 
     // If we navigated here with state (e.g. from Input component redirecting us back), 
     // we capture it and move to selection step.
@@ -24,30 +25,33 @@ export default function BusinessBookRide() {
         }
     }, [location.state]);
 
-    // Fetch real fleet data
+    // Fetch real fleet data & Pricing Settings
     useEffect(() => {
         if (step === "select_vehicle") {
-            const getFleet = async () => {
+            const loadData = async () => {
                 setLoadingFleet(true);
                 try {
-                    // Fetch fleet assigned to the company
-                    const result = await fetchMyFleet(); // New service function
-                    if (result.success && result.data && result.data.vehicles) {
-                        const vehicles = result.data.vehicles;
-                        if (vehicles.length > 0) {
-                            setFleet(vehicles);
-                        } else {
-                            // Handle case where company has no assigned vehicles
-                            setFleet([]);
-                        }
+                    const { fetchPricingSettings } = await import("../services/fleetService");
+
+                    const [fleetRes, pricingRes] = await Promise.all([
+                        fetchMyFleet(),
+                        fetchPricingSettings()
+                    ]);
+
+                    if (pricingRes.success) {
+                        setPricingSettings(pricingRes.data);
+                    }
+
+                    if (fleetRes.success && fleetRes.data && fleetRes.data.vehicles) {
+                        setFleet(fleetRes.data.vehicles);
                     }
                 } catch (error) {
-                    console.error("Error fetching company fleet:", error);
+                    console.error("Error fetching data:", error);
                 } finally {
                     setLoadingFleet(false);
                 }
             };
-            getFleet();
+            loadData();
         }
     }, [step]);
 
@@ -128,9 +132,35 @@ export default function BusinessBookRide() {
                                 fleet.map(vehicle => {
                                     const rate = vehicle.base_price_per_km || vehicle.basePrice || 13;
                                     const dist = distanceKm || searchData.distanceKm || 0;
-                                    const estimatedPrice = dist ? Math.round(dist * rate) : 0;
-                                    const finalPrice = Math.max(estimatedPrice, 300);
 
+                                    let billableDistance = dist;
+                                    const RULE_MIN_KM = 300;
+
+                                    if (pricingSettings) {
+                                        const {
+                                            min_km_threshold,
+                                            min_km_airport_apply,
+                                            min_km_oneway_apply,
+                                            min_km_roundtrip_apply
+                                        } = pricingSettings;
+
+                                        // For business, we might want a specific rideType or use 'corporate'
+                                        // But usually corporate trips follow 'oneway' or 'airport' logic
+                                        const isAirport = searchData.from?.toLowerCase().includes("airport") || searchData.to?.toLowerCase().includes("airport");
+                                        const rideType = isAirport ? "airport" : "oneway";
+
+                                        let applyRule = false;
+                                        if (dist > min_km_threshold) {
+                                            if (rideType === "airport" && min_km_airport_apply) applyRule = true;
+                                            else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
+                                        }
+
+                                        if (applyRule) {
+                                            billableDistance = Math.max(RULE_MIN_KM, dist);
+                                        }
+                                    }
+
+                                    const finalPrice = Math.round(billableDistance * rate);
                                     return (
                                         <div key={vehicle.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 hover:border-yellow-500/50 transition-all">
                                             <div className="w-full sm:w-48 h-32 bg-neutral-800 rounded-2xl overflow-hidden shrink-0">

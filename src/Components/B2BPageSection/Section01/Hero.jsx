@@ -1,9 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
-import b2bHeroImage from "../../../assets/b2b_hero_bg_professional.png";
 
 export default function HeroFullCover({
-  imageSrc = b2bHeroImage,
+  imageSrc = "/b2b_hero.jpg",
   titleLines = ["Managing Workplace Commute", "Smart Employee Transport & Fleet Solutions"],
   subtitle = "Employee pick-up & drop, airport transfers, and corporate rentals — SLA-backed and fleet-ready.",
   primaryCta = { label: "Login", href: "#contact" },
@@ -12,24 +11,25 @@ export default function HeroFullCover({
 }) {
   return (
     <section
-      className={`relative ${minHeight} w-full flex items-center`}
+      className={`relative ${minHeight} w-full flex items-center bg-gray-900 overflow-hidden`}
       aria-labelledby="hero-heading"
     >
       {/* Background image */}
-      <div
-        className="absolute inset-0 bg-center bg-cover -z-10"
-        style={{
-          backgroundImage: `url(${imageSrc})`,
-        }}
-        role="img"
-        aria-label="Corporate shuttle in front of an office (background)"
+      <img
+        src={imageSrc}
+        alt="Corporate Hero"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ zIndex: 0 }}
       />
 
       {/* Dark gradient overlay to ensure legibility */}
-      <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/35 to-black/45 -z-5" />
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/50"
+        style={{ zIndex: 1 }}
+      />
 
       {/* Optional soft vignette to focus center */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden>
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }} aria-hidden>
         <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 60%, rgba(0,0,0,0.6) 100%)]" />
       </div>
 

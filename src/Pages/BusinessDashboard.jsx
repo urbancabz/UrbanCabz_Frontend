@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import BusinessBookings from "../Components/Business/BusinessBookings";
 import BusinessProfile from "../Components/Business/BusinessProfile";
+import BusinessPayments from "../Components/Business/BusinessPayments";
 import { getCompanyProfile } from "../services/authService";
 import {
     BuildingOfficeIcon,
     MapIcon,
     UserCircleIcon,
+    CreditCardIcon,
     ArrowRightOnRectangleIcon,
     ChevronRightIcon
 } from "@heroicons/react/24/outline";
@@ -31,6 +33,7 @@ export default function BusinessDashboard() {
 
     const menuItems = [
         { id: "bookings", label: "Bookings", icon: MapIcon },
+        { id: "payments", label: "Payments", icon: CreditCardIcon },
         { id: "profile", label: "Profile", icon: UserCircleIcon },
     ];
 
@@ -143,6 +146,7 @@ export default function BusinessDashboard() {
                             transition={{ duration: 0.3, ease: "easeOut" }}
                         >
                             {activeTab === "bookings" && <BusinessBookings company={company} />}
+                            {activeTab === "payments" && <BusinessPayments company={company} />}
                             {activeTab === "profile" && <BusinessProfile company={company} />}
                         </motion.div>
                     </AnimatePresence>

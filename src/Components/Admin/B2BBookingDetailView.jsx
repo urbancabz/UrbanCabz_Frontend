@@ -83,8 +83,9 @@ export default function B2BBookingDetailView({
         switch (status) {
             case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
-            case 'PAID': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-            case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'PAID': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'READY': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'IN_PROGRESS': return 'bg-slate-100 text-slate-700 border-slate-200';
             default: return 'bg-amber-100 text-amber-700 border-amber-200';
         }
     };
@@ -153,12 +154,12 @@ export default function B2BBookingDetailView({
 
                     {/* Action Buttons */}
                     <div className="space-y-3 pt-4 border-t border-slate-200">
-                        {booking.status === "CONFIRMED" && (
+                        {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (
                             <button onClick={() => setShowAssignModal(true)} className="w-full py-3.5 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all">
                                 {booking.taxi_assign_status === "ASSIGNED" ? "Update Driver 🚕" : "Dispatch Driver 🚕"}
                             </button>
                         )}
-                        {booking.taxi_assign_status === "ASSIGNED" && booking.status === "CONFIRMED" && (
+                        {booking.taxi_assign_status === "ASSIGNED" && booking.status !== "IN_PROGRESS" && booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (
                             <button onClick={handleStartTrip} disabled={saving} className="w-full py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200">
                                 Start Expedition ▶️
                             </button>

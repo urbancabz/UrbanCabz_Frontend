@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import useDragScroll from '../../hooks/useDragScroll';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
 export default function B2BRequestsList() {
+    const { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, onContextMenu, isDragging } = useDragScroll();
+
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('ALL'); // ALL, PENDING, APPROVED, REJECTED
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [approveDetails, setApproveDetails] = useState({
+        address: '',
+        city: '',
+        state: '',
+        pincode: ''
+    });
 
     useEffect(() => {
         fetchRequests();
@@ -38,25 +48,42 @@ export default function B2BRequestsList() {
         }
     };
 
-    const handleApprove = async (requestId) => {
-        if (!confirm('Are you sure you want to approve this B2B request?')) return;
+    const handleApprove = (request) => {
+        setSelectedRequest(request);
+        setShowApproveModal(true);
+    };
+
+    const confirmApproval = async () => {
+        const { address, city, state, pincode } = approveDetails;
+
+        if (!address || !city || !state || !pincode) {
+            alert('Please fill in all company details');
+            return;
+        }
 
         try {
             const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${API_BASE_URL}/b2b/requests/${requestId}/approve`, {
+            const response = await fetch(`${API_BASE_URL}/b2b/requests/${selectedRequest.id}/approve`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    admin_notes: 'Approved via admin panel'
+                    admin_notes: 'Approved via admin panel',
+                    address,
+                    city,
+                    state,
+                    pincode
                 })
             });
 
             const data = await response.json();
             if (data.success) {
                 alert('B2B request approved successfully!');
+                setShowApproveModal(false);
+                setSelectedRequest(null);
+                setApproveDetails({ address: '', city: '', state: '', pincode: '' });
                 fetchRequests();
             } else {
                 alert('Failed to approve request: ' + data.message);
@@ -160,23 +187,31 @@ export default function B2BRequestsList() {
 
             {/* Requests Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
+                <div
+                    ref={ref}
+                    onMouseDown={onMouseDown}
+                    onMouseLeave={onMouseLeave}
+                    onMouseUp={onMouseUp}
+                    onMouseMove={onMouseMove}
+                    onContextMenu={onContextMenu}
+                    className={`overflow-x-auto CustomScrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                >
+                    <table className="min-w-[1200px] w-full">
                         <thead className="bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Company
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Contact
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Vehicle Preference
+                                </th>
+                                <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Status
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Submitted
-                                </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Actions
                                 </th>
                             </tr>
@@ -191,26 +226,26 @@ export default function B2BRequestsList() {
                             ) : (
                                 filteredRequests.map((request) => (
                                     <tr key={request.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-8 py-6 whitespace-nowrap">
                                             <div className="text-slate-900 font-bold">{request.company_name}</div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-8 py-6">
                                             <div className="text-slate-700 font-bold text-sm">{request.contact_name}</div>
                                             <div className="text-slate-500 text-xs">{request.contact_email}</div>
                                             <div className="text-slate-500 text-xs">{request.contact_phone}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-8 py-6 whitespace-nowrap">
                                             {getStatusBadge(request.status)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs font-semibold">
                                             {new Date(request.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-8 py-6 whitespace-nowrap">
                                             <div className="flex gap-2">
                                                 {request.status === 'PENDING' && (
                                                     <>
                                                         <button
-                                                            onClick={() => handleApprove(request.id)}
+                                                            onClick={() => handleApprove(request)}
                                                             className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors"
                                                         >
                                                             Approve
@@ -239,8 +274,93 @@ export default function B2BRequestsList() {
                 </div>
             </div>
 
+            {/* Approval Modal */}
+            {showApproveModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900">Approve Request</h3>
+                                <p className="text-sm text-slate-500">Enter company details to finalize registration</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}
+                                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Company Address</label>
+                                <textarea
+                                    value={approveDetails.address}
+                                    onChange={(e) => setApproveDetails({ ...approveDetails, address: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                    placeholder="Full office address"
+                                    rows="3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">City</label>
+                                    <input
+                                        type="text"
+                                        value={approveDetails.city}
+                                        onChange={(e) => setApproveDetails({ ...approveDetails, city: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                        placeholder="City"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">State</label>
+                                    <input
+                                        type="text"
+                                        value={approveDetails.state}
+                                        onChange={(e) => setApproveDetails({ ...approveDetails, state: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                        placeholder="State"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Pincode</label>
+                                <input
+                                    type="text"
+                                    value={approveDetails.pincode}
+                                    onChange={(e) => setApproveDetails({ ...approveDetails, pincode: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                    placeholder="6-digit Pincode"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}
+                                    className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmApproval}
+                                    className="flex-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                                >
+                                    Confirm Approval
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
             {/* Detail Modal */}
-            {selectedRequest && (
+            {selectedRequest && !showApproveModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedRequest(null)}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}

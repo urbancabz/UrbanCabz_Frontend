@@ -18,10 +18,10 @@ export default function BookingDetailView({
 
     // Assignment form
     const [assignForm, setAssignForm] = useState({
-        driverName: booking.assignments?.[0]?.driver_name || "",
-        driverNumber: booking.assignments?.[0]?.driver_number || "",
-        cabNumber: booking.assignments?.[0]?.cab_number || "",
-        cabName: booking.assignments?.[0]?.cab_name || booking.car_model || ""
+        driverName: booking.assign_taxis?.[0]?.driver_name || "",
+        driverNumber: booking.assign_taxis?.[0]?.driver_number || "",
+        cabNumber: booking.assign_taxis?.[0]?.cab_number || "",
+        cabName: booking.assign_taxis?.[0]?.cab_name || booking.car_model || ""
     });
 
     const handleAssignSubmit = async (e) => {
@@ -155,12 +155,12 @@ export default function BookingDetailView({
 
                     {/* Action Buttons */}
                     <div className="space-y-3 pt-4 border-t border-slate-200">
-                        {booking.status === "CONFIRMED" && (
+                        {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (
                             <button onClick={() => setShowAssignModal(true)} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
                                 {booking.taxi_assign_status === "ASSIGNED" ? "Update Driver 🚕" : "Dispatch Driver 🚕"}
                             </button>
                         )}
-                        {booking.taxi_assign_status === "ASSIGNED" && booking.status === "CONFIRMED" && (
+                        {booking.taxi_assign_status === "ASSIGNED" && booking.status !== "IN_PROGRESS" && booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (
                             <button onClick={handleStartTrip} disabled={saving} className="w-full py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-200">
                                 Start Trip ▶️
                             </button>
@@ -172,18 +172,18 @@ export default function BookingDetailView({
                         )}
 
                         {/* WhatsApp Quick Actions */}
-                        {booking.assignments?.[0] && (
+                        {booking.assign_taxis?.[0] && (
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200">
                                 <button
                                     onClick={() => {
                                         const phone = (booking.user?.phone || "").replace(/\D/g, "");
-                                        const taxi = booking.assignments[0];
+                                        const taxi = booking.assign_taxis[0];
                                         const msg = encodeURIComponent(
-                                            `🚕 *UrbanCabz Booking*\n\n` +
+                                            `🚕 *UrbanCabz Booking Details*\n\n` +
                                             `Booking ID: #${booking.id}\n` +
                                             `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
                                             `👤 Driver: ${taxi.driver_name}\n` +
-                                            `📞 Driver: ${taxi.driver_number}\n` +
+                                            `📞 Driver: ${taxi.driver_number}\n\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n\n` +
                                             `Thank you for choosing UrbanCabz! 🙏`
@@ -196,17 +196,17 @@ export default function BookingDetailView({
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const taxi = booking.assignments[0];
+                                        const taxi = booking.assign_taxis[0];
                                         const phone = (taxi.driver_number || "").replace(/\D/g, "");
                                         const msg = encodeURIComponent(
-                                            `🚕 *UrbanCabz Pickup*\n\n` +
-                                            `Booking ID: #${booking.id}\n` +
+                                            `🚕 *UrbanCabz Trip Assignment*\n\n` +
+                                            `Booking ID: #${booking.id}\n\n` +
                                             `👤 Customer: ${booking.user?.name || "Guest"}\n` +
                                             `📞 Customer: ${booking.user?.phone}\n` +
                                             `📍 Pickup: ${booking.pickup_location}\n` +
                                             `🏁 Drop: ${booking.drop_location}\n` +
                                             `📏 Distance: ${booking.distance_km} km\n\n` +
-                                            `Please reach on time. 🙏`
+                                            `Please reach on time and drive safely. 🙏`
                                         );
                                         window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
                                     }}

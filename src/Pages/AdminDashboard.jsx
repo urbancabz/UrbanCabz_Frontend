@@ -173,19 +173,23 @@ export default function AdminDashboard() {
               <div key={idx} className="space-y-2">
                 <h3 className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{group.title}</h3>
                 <div className="space-y-1">
-                  {group.items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleViewChange(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all group ${activeView === item.id
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                        }`}
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
+                  {group.items.map(item => {
+                    const isB2B = ["B2B_DISPATCH", "B2B", "COMPANIES"].includes(item.id);
+                    const isActive = activeView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleViewChange(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all group ${isActive
+                          ? isB2B ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                          }`}
+                      >
+                        <span className="text-lg">{item.icon}</span>
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

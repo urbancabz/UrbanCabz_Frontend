@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CompanyFleetManage from "./CompanyFleetManage";
+import useDragScroll from "../../hooks/useDragScroll";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
 export default function CompanyDetails({ company, onClose }) {
+    const { ref: bookingsRef, ...bookingsDrag } = useDragScroll();
+    const { ref: paymentsRef, ...paymentsDrag } = useDragScroll();
+
     const [bookings, setBookings] = useState([]);
     const [payments, setPayments] = useState([]);
     const [allTimeStats, setAllTimeStats] = useState({ totalBilled: 0, totalPaid: 0, outstanding: 0, totalBookings: 0 });
@@ -261,90 +265,102 @@ export default function CompanyDetails({ company, onClose }) {
                         {/* Content */}
                         <div className="min-h-[400px]">
                             {activeTab === "BOOKINGS" ? (
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
-                                            <th className="pb-4 pl-2">Booking ID</th>
-                                            <th className="pb-4">Date & Time</th>
-                                            <th className="pb-4">User</th>
-                                            <th className="pb-4">Route</th>
-                                            <th className="pb-4">Amount</th>
-                                            <th className="pb-4">Status</th>
-                                            <th className="pb-4 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {filteredBookings.map(booking => (
-                                            <tr key={booking.id} className="text-sm font-medium text-slate-600 group hover:bg-slate-50/50 transition-colors">
-                                                <td className="py-4 pl-2 font-bold text-slate-900">#B2B-{booking.id}</td>
-                                                <td className="py-4 text-xs font-semibold text-slate-500">
-                                                    {new Date(booking.created_at).toLocaleString('en-IN', {
-                                                        day: '2-digit', month: 'short', year: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })}
-                                                </td>
-                                                <td className="py-4">
-                                                    <p className="text-xs font-bold">{booking.bookedByUser.name}</p>
-                                                    <p className="text-[10px] text-slate-400">{booking.bookedByUser.email}</p>
-                                                </td>
-                                                <td className="py-4">
-                                                    <p className="text-xs truncate max-w-[150px]">{booking.pickup_location.split(',')[0]} → {booking.drop_location.split(',')[0]}</p>
-                                                </td>
-                                                <td className="py-4 font-black text-slate-900">₹{parseFloat(booking.total_amount).toLocaleString()}</td>
-                                                <td className="py-4">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getStatusColor(booking.status)}`}>
-                                                        {booking.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 text-right">
-                                                    {booking.status === 'COMPLETED' && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleMarkPaid(booking.id); }}
-                                                            className="text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800"
-                                                        >
-                                                            Mark Paid
-                                                        </button>
-                                                    )}
-                                                </td>
+                                <div
+                                    ref={bookingsRef}
+                                    {...bookingsDrag}
+                                    className={`overflow-x-auto CustomScrollbar select-none ${bookingsDrag.isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                                >
+                                    <table className="min-w-[1200px] w-full">
+                                        <thead>
+                                            <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
+                                                <th className="px-8 py-6 pl-2">Booking ID</th>
+                                                <th className="px-8 py-6">Date & Time</th>
+                                                <th className="px-8 py-6">User</th>
+                                                <th className="px-8 py-6">Route</th>
+                                                <th className="px-8 py-6">Amount</th>
+                                                <th className="px-8 py-6">Status</th>
+                                                <th className="px-8 py-6 text-right">Action</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {filteredBookings.map(booking => (
+                                                <tr key={booking.id} className="text-sm font-medium text-slate-600 group hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-8 py-6 font-bold text-slate-900">#B2B-{booking.id}</td>
+                                                    <td className="px-8 py-6 text-xs font-semibold text-slate-500">
+                                                        {new Date(booking.created_at).toLocaleString('en-IN', {
+                                                            day: '2-digit', month: 'short', year: 'numeric',
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <p className="text-xs font-bold">{booking.bookedByUser.name}</p>
+                                                        <p className="text-[10px] text-slate-400">{booking.bookedByUser.email}</p>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <p className="text-xs truncate max-w-[150px]">{booking.pickup_location.split(',')[0]} → {booking.drop_location.split(',')[0]}</p>
+                                                    </td>
+                                                    <td className="px-8 py-6 font-black text-slate-900">₹{parseFloat(booking.total_amount).toLocaleString()}</td>
+                                                    <td className="px-8 py-6">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getStatusColor(booking.status)}`}>
+                                                            {booking.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        {booking.status === 'COMPLETED' && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleMarkPaid(booking.id); }}
+                                                                className="text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800"
+                                                            >
+                                                                Mark Paid
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             ) : (
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
-                                            <th className="pb-4 pl-2">Date</th>
-                                            <th className="pb-4">Amount</th>
-                                            <th className="pb-4">Mode</th>
-                                            <th className="pb-4">Reference</th>
-                                            <th className="pb-4">Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {filteredPayments.map(payment => (
-                                            <tr key={payment.id} className="text-sm font-medium text-slate-600">
-                                                <td className="py-4 pl-2 font-bold text-slate-900">
-                                                    {new Date(payment.payment_date || payment.paid_at || payment.created_at).toLocaleString('en-IN', {
-                                                        day: '2-digit', month: 'short', year: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })}
-                                                </td>
-                                                <td className="py-4 font-black text-emerald-600">₹{payment.amount.toLocaleString()}</td>
-                                                <td className="py-4">
-                                                    <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">{payment.payment_mode}</span>
-                                                </td>
-                                                <td className="py-4 text-xs">{payment.reference_no || '-'}</td>
-                                                <td className="py-4 text-xs text-slate-400 italic">{payment.notes || '-'}</td>
+                                <div
+                                    ref={paymentsRef}
+                                    {...paymentsDrag}
+                                    className={`overflow-x-auto CustomScrollbar select-none ${paymentsDrag.isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                                >
+                                    <table className="min-w-[1000px] w-full">
+                                        <thead>
+                                            <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
+                                                <th className="px-8 py-6 pl-2">Date</th>
+                                                <th className="px-8 py-6">Amount</th>
+                                                <th className="px-8 py-6">Mode</th>
+                                                <th className="px-8 py-6">Reference</th>
+                                                <th className="px-8 py-6">Notes</th>
                                             </tr>
-                                        ))}
-                                        {filteredPayments.length === 0 && (
-                                            <tr>
-                                                <td colSpan="5" className="py-20 text-center text-slate-400 font-bold italic">No payment history available</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {filteredPayments.map(payment => (
+                                                <tr key={payment.id} className="text-sm font-medium text-slate-600">
+                                                    <td className="px-8 py-6 pl-2 font-bold text-slate-900">
+                                                        {new Date(payment.payment_date || payment.paid_at || payment.created_at).toLocaleString('en-IN', {
+                                                            day: '2-digit', month: 'short', year: 'numeric',
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td className="px-8 py-6 font-black text-emerald-600">₹{payment.amount.toLocaleString()}</td>
+                                                    <td className="px-8 py-6">
+                                                        <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold">{payment.payment_mode}</span>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-xs">{payment.reference_no || '-'}</td>
+                                                    <td className="px-8 py-6 text-xs text-slate-400 italic">{payment.notes || '-'}</td>
+                                                </tr>
+                                            ))}
+                                            {filteredPayments.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" className="py-20 text-center text-slate-400 font-bold italic">No payment history available</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     </div>

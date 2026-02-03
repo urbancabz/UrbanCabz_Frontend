@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import useDragScroll from "../../hooks/useDragScroll";
 
 /**
  * HistoryTable - Reusable table component for displaying ride history
@@ -9,6 +10,8 @@ import { motion } from "framer-motion";
  *  - onRowClick: Optional function to handle row clicks
  */
 export default function HistoryTable({ bookings = [], type = "completed", onRowClick }) {
+    const { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, onContextMenu, isDragging } = useDragScroll();
+
     const formatDate = (dateString) => {
         if (!dateString) return "—";
         return new Date(dateString).toLocaleDateString("en-IN", {
@@ -76,18 +79,26 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
     }
 
     return (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
-            <table className="min-w-full divide-y divide-slate-200">
+        <div
+            ref={ref}
+            onMouseDown={onMouseDown}
+            onMouseLeave={onMouseLeave}
+            onMouseUp={onMouseUp}
+            onMouseMove={onMouseMove}
+            onContextMenu={onContextMenu}
+            className={`overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white CustomScrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+        >
+            <table className="min-w-[1600px] w-full divide-y divide-slate-200">
                 <thead>
                     <tr className="bg-slate-50/80">
-                        <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">ID & Schedule</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[160px]">Customer</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[240px]">Route Details</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Dispatch Info</th>
-                        <th className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Distance</th>
-                        <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[150px]">Billing Info</th>
-                        <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[160px]">Payment</th>
-                        <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">ID & Schedule</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Customer</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[450px]">Route Details</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[250px]">Dispatch Info</th>
+                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Distance</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[180px]">Billing Info</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Payment</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
@@ -105,13 +116,13 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                 className="group cursor-pointer transition-all"
                                 onClick={() => onRowClick && onRowClick(booking)}
                             >
-                                <td className="px-6 py-6 text-left whitespace-nowrap align-top">
+                                <td className="px-8 py-6 text-left whitespace-nowrap align-top">
                                     <span className="block text-sm font-black text-indigo-600 mb-1">#{booking.id}</span>
                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                                         {formatDate(booking.created_at)}
                                     </span>
                                 </td>
-                                <td className="px-6 py-6 text-left align-top">
+                                <td className="px-8 py-6 text-left align-top">
                                     <div className="text-sm font-black text-slate-900 mb-0.5 group-hover:text-indigo-600 transition-colors">
                                         {booking.user?.name || "Guest User"}
                                     </div>
@@ -120,7 +131,7 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         {booking.user?.email}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6 text-left align-top">
+                                <td className="px-8 py-6 text-left align-top">
                                     <div className="space-y-3 relative">
                                         <div className="flex items-start gap-3">
                                             <div className="mt-1.5 min-w-[8px] h-[8px] rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
@@ -136,7 +147,7 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-6 text-left align-top">
+                                <td className="px-8 py-6 text-left align-top">
                                     {assignment.cab_name ? (
                                         <div className="space-y-2">
                                             <div className="text-xs font-black text-slate-900 group-hover:text-indigo-600">
@@ -160,7 +171,7 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-6 text-center align-top whitespace-nowrap">
+                                <td className="px-8 py-6 text-center align-top whitespace-nowrap">
                                     <div className="text-sm font-black text-slate-900 mb-1">{booking.actual_km || booking.distance_km || "—"} <span className="text-[10px] uppercase text-slate-400">KM</span></div>
                                     {booking.extra_km > 0 && (
                                         <div className="inline-block text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase">
@@ -168,7 +179,7 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-6 text-right align-top whitespace-nowrap">
+                                <td className="px-8 py-6 text-right align-top whitespace-nowrap">
                                     <div className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
                                         {formatAmount(booking.total_amount)}
                                     </div>
@@ -181,11 +192,11 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         Base: {formatAmount(estFare)}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6 text-left align-top">
+                                <td className="px-8 py-6 text-left align-top">
                                     <div className="space-y-2">
                                         <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-widest ${paymentType.includes("Full") ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                paymentType === "Unpaid" ? 'bg-slate-50 text-slate-400 border-slate-100' :
-                                                    'bg-amber-50 text-amber-700 border-amber-100'
+                                            paymentType === "Unpaid" ? 'bg-slate-50 text-slate-400 border-slate-100' :
+                                                'bg-amber-50 text-amber-700 border-amber-100'
                                             }`}>
                                             {paymentType}
                                         </span>
@@ -201,7 +212,7 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6 text-right align-top">
+                                <td className="px-8 py-6 text-right align-top">
                                     <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border-2 tracking-widest shadow-sm ${getStatusColor(booking.status)}`}>
                                         {booking.status === "COMPLETED" ? "✓ Done" :
                                             booking.status === "CANCELLED" ? "✕ Void" :
