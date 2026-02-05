@@ -23,7 +23,9 @@ function isAdminUser(data) {
     data?.user?.role_name ||
     data?.role ||
     data?.user?.roles?.[0];
-  return (role || '').toString().toLowerCase() === 'admin';
+  const isAdmin = (role || '').toString().toLowerCase() === 'admin';
+  console.log('🔍 isAdminUser check:', { role, isAdmin });
+  return isAdmin;
 }
 
 function persistCustomerProfile(profile) {

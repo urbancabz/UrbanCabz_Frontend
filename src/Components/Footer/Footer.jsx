@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { FaFacebookF, FaInstagram, FaTwitter, FaLinkedinIn } from "react-icons/fa";
 
 export default function Footer() {
@@ -18,21 +19,21 @@ export default function Footer() {
         <div>
           <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
           <ul className="space-y-2 opacity-90">
-            <li><a href="#" className="hover:text-yellow-500 transition">Home</a></li>
-            <li><a href="#" className="hover:text-yellow-500 transition">About</a></li>
-            <li><a href="#" className="hover:text-yellow-500 transition">Services</a></li>
-            <li><a href="#" className="hover:text-yellow-500 transition">Contact</a></li>
+            <li><Link to="/" className="hover:text-yellow-500 transition">Home</Link></li>
+            <li><Link to="/contact-us" className="hover:text-yellow-500 transition">Contact Us</Link></li>
+            <li><Link to="/cab-booking" className="hover:text-yellow-500 transition">Book a Ride</Link></li>
+            <li><Link to="/b2b" className="hover:text-yellow-500 transition">For Business</Link></li>
           </ul>
         </div>
 
-        {/* Services */}
+        {/* Legal */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Our Services</h3>
+          <h3 className="text-lg font-semibold mb-4">Legal</h3>
           <ul className="space-y-2 opacity-90">
-            <li>Airport Transfers</li>
-            <li>Outstation Rides</li>
-            <li>Round Trips</li>
-            <li>City Tours</li>
+            <li><Link to="/privacy-policy" className="hover:text-yellow-500 transition">Privacy Policy</Link></li>
+            <li><Link to="/terms-and-conditions" className="hover:text-yellow-500 transition">Terms & Conditions</Link></li>
+            <li><Link to="/refund-policy" className="hover:text-yellow-500 transition">Refund Policy</Link></li>
+            <li><Link to="/shipping-policy" className="hover:text-yellow-500 transition">Shipping Policy</Link></li>
           </ul>
         </div>
 

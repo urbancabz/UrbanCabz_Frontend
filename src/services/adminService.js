@@ -54,7 +54,7 @@ export async function fetchAdminMe() {
     console.error("fetchAdminMe error:", error);
     return {
       success: false,
-      message: "Network error while fetching admin profile",
+      message: "Network error while fetching admin profile: " + error.message,
       error: error.message,
     };
   }

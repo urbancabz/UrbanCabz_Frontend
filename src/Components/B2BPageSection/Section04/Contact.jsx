@@ -84,7 +84,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <div className="text-sm text-neutral-400">Call Us</div>
-                                    <div className="text-lg font-medium">+91 98765 43210</div>
+                                    <div className="text-lg font-medium">+91 90338 77967</div>
                                 </div>
                             </div>
 
@@ -96,7 +96,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <div className="text-sm text-neutral-400">Email Us</div>
-                                    <div className="text-lg font-medium">b2b@urbancabz.com</div>
+                                    <div className="text-lg font-medium">contact@urbancabz.com</div>
                                 </div>
                             </div>
                         </div>
@@ -164,7 +164,7 @@ export default function Contact() {
                                         value={formState.phone}
                                         onChange={handleChange}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
-                                        placeholder="+91 98765 43210"
+                                        placeholder="+91 90338 77967"
                                     />
                                 </div>
                             </div>

@@ -8,7 +8,13 @@ import CabBookingDetails from "./Pages/CabBookingDetails";
 import AdminDashboard from "./Pages/AdminDashboard";
 import BusinessDashboard from "./Pages/BusinessDashboard";
 import BusinessBookRide from "./Pages/BusinessBookRide";
+
 import BusinessBookingDetails from "./Pages/BusinessBookingDetails";
+import PrivacyPolicy from "./Pages/Legal/PrivacyPolicy";
+import TermsAndConditions from "./Pages/Legal/TermsAndConditions";
+import RefundPolicy from "./Pages/Legal/RefundPolicy";
+import ContactUs from "./Pages/ContactUs";
+import ShippingPolicy from "./Pages/Legal/ShippingPolicy";
 import CompanyList from "./Components/Admin/CompanyList";
 import {
   BrowserRouter as Router,
@@ -109,6 +115,46 @@ const AnimatedRoutes = () => {
           element={
             <PageWrapper>
               <BusinessBookingDetails />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/privacy-policy"
+          element={
+            <PageWrapper>
+              <PrivacyPolicy />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/terms-and-conditions"
+          element={
+            <PageWrapper>
+              <TermsAndConditions />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/refund-policy"
+          element={
+            <PageWrapper>
+              <RefundPolicy />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/contact-us"
+          element={
+            <PageWrapper>
+              <ContactUs />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/shipping-policy"
+          element={
+            <PageWrapper>
+              <ShippingPolicy />
             </PageWrapper>
           }
         />
