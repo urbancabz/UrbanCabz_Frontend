@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import useDragScroll from "../../hooks/useDragScroll";
 
 /**
  * HistoryTable - Reusable table component for displaying ride history
@@ -9,6 +10,8 @@ import { motion } from "framer-motion";
  *  - onRowClick: Optional function to handle row clicks
  */
 export default function HistoryTable({ bookings = [], type = "completed", onRowClick }) {
+    const { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, onContextMenu, isDragging } = useDragScroll();
+
     const formatDate = (dateString) => {
         if (!dateString) return "—";
         return new Date(dateString).toLocaleDateString("en-IN", {
@@ -76,27 +79,29 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
     }
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-            <table className="min-w-full divide-y divide-slate-200 bg-white">
-                <thead className="bg-slate-50">
-                    <tr>
-                        <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">ID & Date</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 min-w-[140px]">Customer</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 min-w-[220px]">Route</th>
-
-                        {/* Vehicle & Driver - show for all types */}
-                        <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 min-w-[180px]">Vehicle & Driver</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Distance (KM)</th>
-                        <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap min-w-[140px]">Fare Breakdown</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 min-w-[160px]">Payment Info</th>
-
-                        {type === "cancelled" && (
-                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 min-w-[180px]">Reason</th>
-                        )}
-                        <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+        <div
+            ref={ref}
+            onMouseDown={onMouseDown}
+            onMouseLeave={onMouseLeave}
+            onMouseUp={onMouseUp}
+            onMouseMove={onMouseMove}
+            onContextMenu={onContextMenu}
+            className={`overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white CustomScrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+        >
+            <table className="min-w-[1600px] w-full divide-y divide-slate-200">
+                <thead>
+                    <tr className="bg-slate-50/80">
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">ID & Schedule</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Customer</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[450px]">Route Details</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[250px]">Dispatch Info</th>
+                        <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Distance</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[180px]">Billing Info</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Payment</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                     {bookings.map((booking) => {
                         const { transactionIds, paymentType } = getPaymentDetails(booking);
                         const assignment = booking.assign_taxis?.[0] || {};
@@ -105,111 +110,113 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                         return (
                             <motion.tr
                                 key={booking.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                whileHover={{ backgroundColor: "rgba(99, 102, 241, 0.05)" }}
-                                className="cursor-pointer transition-colors"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                whileHover={{ backgroundColor: "rgba(99, 102, 241, 0.02)" }}
+                                className="group cursor-pointer transition-all"
                                 onClick={() => onRowClick && onRowClick(booking)}
                             >
-                                <td className="px-6 py-4 text-left whitespace-nowrap align-top">
-                                    <span className="block text-xs font-mono font-bold text-indigo-600">#{booking.id}</span>
-                                    <span className="block text-[10px] text-slate-500">{formatDate(booking.created_at)}</span>
+                                <td className="px-8 py-6 text-left whitespace-nowrap align-top">
+                                    <span className="block text-sm font-black text-indigo-600 mb-1">#{booking.id}</span>
+                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                        {formatDate(booking.created_at)}
+                                    </span>
                                 </td>
-                                <td className="px-6 py-4 text-left align-top">
-                                    <div className="text-sm font-semibold text-slate-900">{booking.user?.name || "Guest"}</div>
-                                    <div className="text-xs text-slate-500 font-mono">{booking.user?.phone}</div>
-                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px]" title={booking.user?.email}>{booking.user?.email}</div>
+                                <td className="px-8 py-6 text-left align-top">
+                                    <div className="text-sm font-black text-slate-900 mb-0.5 group-hover:text-indigo-600 transition-colors">
+                                        {booking.user?.name || "Guest User"}
+                                    </div>
+                                    <div className="text-[11px] font-bold text-slate-500 mb-1">{booking.user?.phone}</div>
+                                    <div className="text-[10px] text-slate-400 truncate max-w-[140px] italic">
+                                        {booking.user?.email}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 text-left align-top">
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-start gap-1.5">
-                                            <div className="mt-1 min-w-[6px] h-[6px] rounded-full bg-emerald-500"></div>
-                                            <span className="text-xs text-slate-700 leading-snug">{booking.pickup_location}</span>
+                                <td className="px-8 py-6 text-left align-top">
+                                    <div className="space-y-3 relative">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1.5 min-w-[8px] h-[8px] rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
+                                            <span className="text-xs font-bold text-slate-700 leading-tight">
+                                                {booking.pickup_location}
+                                            </span>
                                         </div>
-                                        <div className="flex items-start gap-1.5">
-                                            <div className="mt-1 min-w-[6px] h-[6px] rounded-full bg-rose-500"></div>
-                                            <span className="text-xs text-slate-700 leading-snug">{booking.drop_location}</span>
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1.5 min-w-[8px] h-[8px] rounded-full bg-rose-500 ring-4 ring-rose-50"></div>
+                                            <span className="text-xs font-bold text-slate-700 leading-tight">
+                                                {booking.drop_location}
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
-
-                                {/* Vehicle & Driver - Now shows for ALL types */}
-                                <td className="px-6 py-4 text-left align-top">
+                                <td className="px-8 py-6 text-left align-top">
                                     {assignment.cab_name ? (
-                                        <div className="space-y-1">
-                                            <div className="text-xs font-bold text-slate-800">
-                                                {assignment.cab_name}
+                                        <div className="space-y-2">
+                                            <div className="text-xs font-black text-slate-900 group-hover:text-indigo-600">
+                                                🚕 {assignment.cab_name}
                                             </div>
-                                            <div className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded w-fit">
+                                            <div className="inline-block text-[10px] font-black bg-slate-900 text-white px-2 py-0.5 rounded shadow-sm">
                                                 {assignment.cab_number}
                                             </div>
-                                            <div className="text-xs text-slate-600 flex items-center gap-1">
+                                            <div className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
                                                 👤 {assignment.driver_name}
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-xs text-slate-400 italic">Not Assigned</span>
-                                    )}
-                                    {booking.car_model && (
-                                        <div className="text-[10px] text-indigo-600 font-bold mt-1 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
-                                            Req: {booking.car_model}
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-xs font-bold text-slate-300 italic">No Active Assignment</span>
+                                            {booking.car_model && (
+                                                <div className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 w-fit">
+                                                    Requested: {booking.car_model}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-center align-top whitespace-nowrap">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="text-xs font-bold text-slate-800">{booking.actual_km || booking.distance_km || "—"} km</div>
-                                        {booking.extra_km > 0 && (
-                                            <div className="text-[10px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded font-bold">
-                                                +{booking.extra_km} km extra
-                                            </div>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-right align-top whitespace-nowrap">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="text-sm font-bold text-slate-900">{formatAmount(booking.total_amount)}</div>
-                                        {booking.extra_charge > 0 && (
-                                            <div className="text-[10px] text-amber-600">
-                                                (+{formatAmount(booking.extra_charge)} extra)
-                                            </div>
-                                        )}
-                                        <div className="text-[10px] text-slate-400">
-                                            Base: {formatAmount(estFare)}
+                                <td className="px-8 py-6 text-center align-top whitespace-nowrap">
+                                    <div className="text-sm font-black text-slate-900 mb-1">{booking.actual_km || booking.distance_km || "—"} <span className="text-[10px] uppercase text-slate-400">KM</span></div>
+                                    {booking.extra_km > 0 && (
+                                        <div className="inline-block text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase">
+                                            +{booking.extra_km} Overshoot
                                         </div>
+                                    )}
+                                </td>
+                                <td className="px-8 py-6 text-right align-top whitespace-nowrap">
+                                    <div className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
+                                        {formatAmount(booking.total_amount)}
+                                    </div>
+                                    {booking.extra_charge > 0 && (
+                                        <div className="text-[10px] font-bold text-amber-600 mb-1 uppercase tracking-tighter">
+                                            +{formatAmount(booking.extra_charge)} Extra Fees
+                                        </div>
+                                    )}
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic opacity-60">
+                                        Base: {formatAmount(estFare)}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-left align-top">
-                                    <div className="flex flex-col gap-1">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded w-fit ${paymentType.includes("Full") ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : paymentType === "Unpaid" ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>
+                                <td className="px-8 py-6 text-left align-top">
+                                    <div className="space-y-2">
+                                        <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-widest ${paymentType.includes("Full") ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                            paymentType === "Unpaid" ? 'bg-slate-50 text-slate-400 border-slate-100' :
+                                                'bg-amber-50 text-amber-700 border-amber-100'
+                                            }`}>
                                             {paymentType}
                                         </span>
                                         {getPaymentDetails(booking).totalPaid > 0 && (
-                                            <div className="text-xs font-bold text-emerald-600">
+                                            <div className="text-xs font-black text-emerald-600 tracking-tight">
                                                 Received: {formatAmount(getPaymentDetails(booking).totalPaid)}
                                             </div>
                                         )}
                                         {transactionIds !== "—" && (
-                                            <div className="text-[10px] text-slate-500 font-mono break-all leading-tight">
-                                                {transactionIds}
+                                            <div className="text-[9px] text-slate-400 font-mono break-all leading-tight opacity-70">
+                                                TXN: {transactionIds.split(',')[0]}...
                                             </div>
                                         )}
                                     </div>
                                 </td>
-
-                                {type === "cancelled" && (
-                                    <td className="px-6 py-4 text-left align-top max-w-[200px]">
-                                        <span className="text-xs text-slate-600 block italic leading-snug bg-rose-50 p-2 rounded border border-rose-100">
-                                            "{booking.cancellation_reason || "No reason provided"}"
-                                        </span>
-                                    </td>
-                                )}
-
-                                <td className="px-6 py-4 text-right align-top">
-                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ${getStatusColor(booking.status)}`}>
-                                        {booking.status === "COMPLETED" && "✅ "}
-                                        {booking.status === "CANCELLED" && "❌ "}
-                                        {booking.status}
+                                <td className="px-8 py-6 text-right align-top">
+                                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border-2 tracking-widest shadow-sm ${getStatusColor(booking.status)}`}>
+                                        {booking.status === "COMPLETED" ? "✓ Done" :
+                                            booking.status === "CANCELLED" ? "✕ Void" :
+                                                booking.status}
                                     </span>
                                 </td>
                             </motion.tr>

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function WhyChooseUs({ title, subtitle, features }) {
   return (
-    <section className="w-full py-16 md:py-10 flex flex-col items-center px-6 bg-slate-50">
+    <section className="w-full py-12 md:py-16 flex flex-col items-center px-6 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Title */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -12,10 +12,10 @@ export default function WhyChooseUs({ title, subtitle, features }) {
         viewport={{ once: true }}
         className="text-center mb-10"
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
           {title} <span className="text-yellow-500">Us</span>
         </h2>
-        <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
+        <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-2xl mx-auto">
           {subtitle}
         </p>
       </motion.div>
@@ -29,15 +29,15 @@ export default function WhyChooseUs({ title, subtitle, features }) {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             viewport={{ once: true }}
-            className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-100 text-center flex flex-col items-center transition-transform duration-300 hover:-translate-y-1"
+            className="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-slate-800 text-center flex flex-col items-center transition-all duration-300 hover:-translate-y-1"
           >
-            <div className="mb-4 bg-yellow-100 p-4 rounded-full text-3xl">
+            <div className="mb-4 bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-full text-3xl">
               {feature.icon}
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
               {feature.title}
             </h3>
-            <p className="text-gray-600 text-sm">{feature.desc}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{feature.desc}</p>
           </motion.div>
         ))}
       </div>

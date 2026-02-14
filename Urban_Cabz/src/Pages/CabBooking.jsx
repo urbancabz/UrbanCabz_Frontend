@@ -8,79 +8,66 @@ export default function CabBooking() {
   const { state } = useLocation();
   const from = state?.from || "Pickup location";
   const to = state?.to || "Drop location";
+  const pickupCoords = state?.pickupCoords || null;
+  const dropCoords = state?.dropCoords || null;
   const pickupDate = state?.pickupDate || "—";
   const returnDate = state?.returnDate || "—";
   const pickupTime = state?.pickupTime || "—";
   const rideType = state?.rideType || "airport";
 
   const [distanceKm, setDistanceKm] = useState(null);
+  const [activeListings, setActiveListings] = useState([]);
+  const [pricingSettings, setPricingSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const { fetchPublicFleet, fetchPricingSettings } = await import("../services/fleetService");
+
+      // Load both in parallel
+      const [fleetRes, pricingRes] = await Promise.all([
+        fetchPublicFleet(),
+        fetchPricingSettings()
+      ]);
+
+      if (pricingRes.success) {
+        setPricingSettings(pricingRes.data);
+      }
+
+      if (fleetRes.success) {
+        // Map API data to component format
+        const vehicleList = fleetRes.data.vehicles || [];
+        const mapped = vehicleList.map(v => ({
+          id: v.id,
+          name: v.name,
+          seats: v.seats,
+          bags: Math.floor(v.seats / 2),
+          basePrice: v.base_price_per_km,
+          tags: ["AC", "Comfortable", v.description],
+          rating: 4.8,
+          vehicleType: v.category,
+          image: v.image_url,
+        }));
+        setActiveListings(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load data:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDistanceCalculated = (metrics) => {
     setDistanceKm(metrics.distanceKm);
   };
 
-  // Vehicle listings with car images
-  const listings = [
-    {
-      id: 1,
-      name: "Swift Dzire",
-      seats: 4,
-      bags: 2,
-      basePrice: 13,
-      tags: ["AC", "Music System", "Comfortable"],
-      rating: 4.5,
-      vehicleType: "Sedan",
-      image: "/Dzire.avif",
-    },
-    {
-      id: 2,
-      name: "Toyota Etios",
-      seats: 4,
-      bags: 2,
-      basePrice: 13,
-      tags: ["AC", "Music System", "Comfortable"],
-      rating: 4.3,
-      vehicleType: "Sedan",
-      image: "/etios.jpeg",
-    },
-    {
-      id: 3,
-      name: "Toyota Innova Crysta",
-      seats: 7,
-      bags: 4,
-      basePrice: 22,
-      tags: ["Spacious", "AC", "Premium"],
-      rating: 4.7,
-      vehicleType: "SUV",
-      image: "/Inova.jpg",
-    },
-    {
-      id: 4,
-      name: "Toyota Innova hycross",
-      seats: 7,
-      bags: 4,
-      basePrice: 25,
-      tags: ["Spacious", "AC", "Premium"],
-      rating: 4.7,
-      vehicleType: "SUV",
-      image: "/Hycross.avif",
-    },
-    {
-      id: 5,
-      name: "Tempo traveler",
-      seats: 6,
-      bags: 3,
-      basePrice: 30,
-      tags: ["Family Car", "AC", "Spacious"],
-      rating: 4.4,
-      vehicleType: "LCV",
-      image: "traveller.webp",
-    },
-
-  ];
-
   return (
-    <div className="pt-24 pb-12 bg-gray-50 min-h-screen">
+    <div className="pt-24 pb-12 bg-gray-50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="
@@ -123,28 +110,61 @@ export default function CabBooking() {
         {/* Main layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-slate-800 mb-2 text-base sm:text-lg">Available Vehicles</h3>
-              <p className="text-sm sm:text-base text-slate-600">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-slate-800 transition-colors">
+              <h3 className="font-bold text-slate-800 dark:text-white mb-2 text-base sm:text-lg">Available Vehicles</h3>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400">
                 {distanceKm
                   ? `Prices calculated for ${distanceKm} km journey`
                   : 'Calculating distance...'}
               </p>
             </div>
 
-            {listings.map((listing) => (
-              <CabListingCard
-                key={listing.id}
-                listing={listing}
-                from={from}
-                to={to}
-                distanceKm={distanceKm}
-                rideType={rideType}
-                pickupDate={pickupDate}
-                returnDate={returnDate}
-                pickupTime={pickupTime}
-              />
-            ))}
+            {loading ? (
+              <div className="space-y-4">
+                {/* Show 3 skeleton cards while loading */}
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden animate-pulse">
+                    <div className="p-5 sm:p-7">
+                      <div className="flex flex-col sm:flex-row gap-5 sm:gap-8">
+                        <div className="w-full sm:w-40 flex-shrink-0">
+                          <div className="skeleton rounded-2xl h-36 sm:h-32" />
+                          <div className="skeleton h-6 w-20 mx-auto mt-3 rounded-full" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="skeleton h-7 w-48 rounded mb-3" />
+                          <div className="skeleton h-5 w-32 rounded mb-4" />
+                          <div className="flex gap-3 mb-4">
+                            <div className="skeleton h-8 w-24 rounded-lg" />
+                            <div className="skeleton h-8 w-20 rounded-lg" />
+                          </div>
+                        </div>
+                        <div className="sm:min-w-[180px] sm:border-l border-slate-100 dark:border-slate-800 sm:pl-8">
+                          <div className="skeleton h-10 w-28 rounded ml-auto mb-4" />
+                          <div className="skeleton h-12 w-full rounded-xl" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activeListings.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">No vehicles available at the moment.</div>
+            ) : (
+              activeListings.map((listing) => (
+                <CabListingCard
+                  key={listing.id}
+                  listing={listing}
+                  from={from}
+                  to={to}
+                  distanceKm={distanceKm}
+                  rideType={rideType}
+                  pickupDate={pickupDate}
+                  returnDate={returnDate}
+                  pickupTime={pickupTime}
+                  pricingSettings={pricingSettings}
+                />
+              ))
+            )}
 
             <div className="bg-slate-900 text-white rounded-xl p-4 sm:p-5 border border-slate-800 shadow-lg">
               <div className="flex gap-3 sm:gap-4">
@@ -165,6 +185,8 @@ export default function CabBooking() {
             <BookingSidebar
               from={from}
               to={to}
+              pickupCoords={pickupCoords}
+              dropCoords={dropCoords}
               pickupDate={pickupDate}
               pickupTime={pickupTime}
               onDistanceCalculated={handleDistanceCalculated}

@@ -1,7 +1,7 @@
 // src/services/authService.js
 
 // Configure your backend API URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050/api/v1';
 const CUSTOMER_PROFILE_KEY = 'customerProfile';
 
 function setAdminSession(token) {
@@ -45,12 +45,6 @@ export async function customerLogin(credentials) {
     password: credentials.password,
   };
 
-  console.log('🔵 Customer Login Request:', {
-    url: `${API_BASE_URL}/auth/login`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -60,9 +54,7 @@ export async function customerLogin(credentials) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🔵 Customer Login Response Status:', response.status);
     const data = await response.json();
-    console.log('🔵 Customer Login Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -93,11 +85,7 @@ export async function customerLogin(credentials) {
       message: data.message || 'Login successful',
     };
   } catch (error) {
-    console.error('❌ Customer login error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Customer login error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -113,17 +101,11 @@ export async function customerLogin(credentials) {
  */
 export async function customerSignup(userData) {
   const requestData = {
-    fullName: userData.fullName,
-    mobile: userData.mobile,
+    name: userData.fullName,
+    phone: userData.mobile,
     email: userData.email,
     password: userData.password,
   };
-
-  console.log('🟢 Customer Signup Request:', {
-    url: `${API_BASE_URL}/auth/register`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
 
   try {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -134,9 +116,7 @@ export async function customerSignup(userData) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🟢 Customer Signup Response Status:', response.status);
     const data = await response.json();
-    console.log('🟢 Customer Signup Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -167,11 +147,7 @@ export async function customerSignup(userData) {
       message: data.message || 'Signup successful',
     };
   } catch (error) {
-    console.error('❌ Customer signup error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Customer signup error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -192,24 +168,16 @@ export async function businessLogin(credentials) {
     password: credentials.password,
   };
 
-  console.log('🟡 Business Login Request:', {
-    url: `${API_BASE_URL}/auth/business/login`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/business/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/b2b/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestData),
+      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
     });
 
-    console.log('🟡 Business Login Response Status:', response.status);
     const data = await response.json();
-    console.log('🟡 Business Login Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -236,11 +204,7 @@ export async function businessLogin(credentials) {
       message: data.message || 'Login successful',
     };
   } catch (error) {
-    console.error('❌ Business login error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Business login error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -263,12 +227,6 @@ export async function businessSignup(businessData) {
     password: businessData.password,
   };
 
-  console.log('🟠 Business Signup Request:', {
-    url: `${API_BASE_URL}/auth/business/signup`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/business/signup`, {
       method: 'POST',
@@ -278,9 +236,7 @@ export async function businessSignup(businessData) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🟠 Business Signup Response Status:', response.status);
     const data = await response.json();
-    console.log('🟠 Business Signup Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -307,11 +263,7 @@ export async function businessSignup(businessData) {
       message: data.message || 'Signup successful',
     };
   } catch (error) {
-    console.error('❌ Business signup error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Business signup error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -530,5 +482,153 @@ export async function completePasswordReset(payload) {
       message: 'Network error. Please try again.',
       error: error.message,
     };
+  }
+}
+
+/**
+ * Set B2B permanent password (first login)
+ */
+export async function b2bSetPassword(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/b2b/set-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Unable to set password',
+      };
+    }
+
+    if (data.token) {
+      localStorage.setItem('businessToken', data.token);
+      localStorage.setItem('userType', 'business');
+    }
+
+    return {
+      success: true,
+      data,
+      message: data.message || 'Password set successfully',
+    };
+  } catch (error) {
+    console.error('❌ B2B set password error:', error);
+    return {
+      success: false,
+      message: 'Network error. Please try again.',
+      error: error.message,
+    };
+  }
+}
+
+export async function getCompanyProfile() {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/company/my`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('getCompanyProfile error:', error);
+    return { success: false, message: 'Network error fetching company profile' };
+  }
+}
+
+export async function getCompanyBookings() {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('getCompanyBookings error:', error);
+    return { success: false, message: 'Network error fetching company bookings' };
+  }
+}
+
+export async function getCompanyPayments() {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/payments`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('getCompanyPayments error:', error);
+    return { success: false, message: 'Network error fetching company payments' };
+  }
+}
+
+// ... (existing functions)
+
+export async function bookBusinessRide(bookingData) {
+  try {
+    const token = localStorage.getItem('businessToken');
+    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(bookingData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('bookBusinessRide error:', error);
+    return { success: false, message: 'Network error booking business ride' };
+  }
+}
+
+/**
+ * Verify phone number with OTP
+ */
+export async function verifyPhone(userId, otp) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-phone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, otp }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Verification failed' };
+    }
+
+    // If verified successfully, we might get a token or auto-login logic might be needed
+    // Assuming backend returns success and frontend refreshes/logs in
+    return { success: true, message: data.message || 'Verified successfully' };
+  } catch (error) {
+    console.error('verifyPhone error:', error);
+    return { success: false, message: 'Network error verifying phone' };
+  }
+}
+
+/**
+ * Resend verification OTP
+ */
+export async function resendVerificationOtp(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Resend failed' };
+    }
+    return { success: true, message: data.message || 'OTP sent' };
+  } catch (error) {
+    console.error('resendVerificationOtp error:', error);
+    return { success: false, message: 'Network error resending OTP' };
   }
 }

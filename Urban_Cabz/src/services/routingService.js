@@ -1,10 +1,11 @@
-// src/services/routingService.js
 const NOMINATIM_MIN_INTERVAL = 700;
 const GEO_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 const ROUTE_CACHE_TTL = 1000 * 60 * 60 * 12; // 12 hours
 const geocodeMemoryCache = new Map();
 const routeMemoryCache = new Map();
 let lastGeocodeRequestTs = 0;
+
+import MapplsService from './mapplsService';
 
 const hasSessionStorage = typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
 
@@ -70,14 +71,26 @@ const RoutingService = {
     const normalizedQuery = normalizeAddress(query);
     if (!normalizedQuery || normalizedQuery.length < 2) return [];
 
-    // Check memory cache first (simple debounce/cache strategy)
-    const cacheKey = `suggest_${normalizedQuery}`;
+    const cacheKey = `suggest_v3_${normalizedQuery}`;
     if (geocodeMemoryCache.has(cacheKey)) {
       return geocodeMemoryCache.get(cacheKey);
     }
 
     try {
-      // Use Nominatim for suggestions
+      // 1. Try Mappls (MapmyIndia) first for high-quality India-specific suggestions
+      let suggestions = [];
+      try {
+        suggestions = await MapplsService.getSuggestions(query);
+      } catch (err) {
+        console.warn("Mappls suggest fail, falling back to Nominatim", err);
+      }
+
+      if (suggestions && suggestions.length > 0) {
+        geocodeMemoryCache.set(cacheKey, suggestions);
+        return suggestions;
+      }
+
+      // 2. Fallback to Nominatim (OSM)
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           query
@@ -93,51 +106,57 @@ const RoutingService = {
 
       const data = await response.json();
 
-      const suggestions = data.map((item) => {
-        const addr = item.address || {};
+      suggestions = data
+        .filter(item => {
+          // Filter out low quality results
+          const lower = item.display_name.toLowerCase();
+          if (lower.includes("unnamed road")) return false;
+          if (lower.includes("unnamed way")) return false;
+          return true;
+        })
+        .map((item) => {
+          const addr = item.address || {};
 
-        // Accurate components
-        const building = addr.building || addr.house_name || addr.apartment || addr.residential || "";
-        const houseNum = addr.house_number ? `#${addr.house_number}` : "";
-        const road = addr.road || "";
-        const area = addr.neighbourhood || addr.suburb || addr.subdistrict || addr['sub-district'] || "";
-        const city = addr.city || addr.town || addr.village || addr.district || "";
-        const state = addr.state || "";
+          const building = addr.building || addr.house_name || addr.apartment || addr.residential || "";
+          const road = addr.road || "";
+          const area = addr.neighbourhood || addr.suburb || addr.subdistrict || "";
+          const city = addr.city || addr.town || addr.village || addr.district || "";
+          const state = addr.state || "";
 
-        // Combine building and house number if both exist
-        const specificLoc = [building, houseNum].filter(Boolean).join(", ");
+          // Prioritize Name and Society/Building
+          const components = [
+            item.name && item.name !== city ? item.name : "",
+            building,
+            road,
+            area,
+            city,
+            state
+          ].filter((val, index, self) =>
+            val &&
+            val.length > 1 &&
+            self.indexOf(val) === index
+          );
 
-        const components = [
-          item.name !== city ? item.name : "", // Place name (if not just the city name)
-          specificLoc,
-          road,
-          area,
-          city,
-          state
-        ].filter((val, index, self) =>
-          val &&
-          val.length > 1 &&
-          self.indexOf(val) === index
-        );
+          let label = components.join(", ");
 
-        let label = components.join(", ");
+          if (components.length < 3) {
+            label = item.display_name.split(", ").slice(0, 4).join(", ");
+          }
 
-        // If label is too short, use a portion of the display_name
-        if (components.length < 3) {
-          label = item.display_name.split(", ").slice(0, 4).join(", ");
-        }
+          if (!label.toLowerCase().includes("india")) {
+            label += ", India";
+          }
 
-        // Final cleanup for "India"
-        if (!label.toLowerCase().includes("india")) {
-          label += ", India";
-        }
+          return {
+            label,
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            display_name: item.display_name,
+            source: 'nominatim'
+          };
+        });
 
-        return label;
-      });
-
-      // Cache results
       geocodeMemoryCache.set(cacheKey, suggestions);
-
       return suggestions;
     } catch (error) {
       console.warn("Suggestion fetch error:", error);
@@ -201,8 +220,13 @@ const RoutingService = {
   },
 
   async getDistanceAndDuration(fromAddress, toAddress) {
-    const normalizedFrom = normalizeAddress(fromAddress);
-    const normalizedTo = normalizeAddress(toAddress);
+    // If inputs are objects with lat/lng, use them directly
+    let fromCoords = typeof fromAddress === 'object' ? fromAddress : null;
+    let toCoords = typeof toAddress === 'object' ? toAddress : null;
+
+    let normalizedFrom = fromCoords ? `lat:${fromCoords.lat},lng:${fromCoords.lng}` : normalizeAddress(fromAddress);
+    let normalizedTo = toCoords ? `lat:${toCoords.lat},lng:${toCoords.lng}` : normalizeAddress(toAddress);
+
     if (!normalizedFrom || !normalizedTo) throw new Error('Valid locations are required');
 
     const cacheKey = `${normalizedFrom}|${normalizedTo}`;
@@ -210,22 +234,31 @@ const RoutingService = {
       return routeMemoryCache.get(cacheKey);
     }
 
-    const storedRoute = readFromStorage(routeStorageKey(normalizedFrom, normalizedTo), ROUTE_CACHE_TTL);
-    if (storedRoute) {
-      routeMemoryCache.set(cacheKey, storedRoute);
-      return storedRoute;
-    }
+    // Try storage only if we have string addresses (or unique keys for coords)
+    // For simplicity, we skip storage read for raw coords unless we serialize them consistently
+    // But let's keep the existing logic where possible
 
-    let fromCoords = null;
-    let toCoords = null;
+    // NOTE: If we really want to cache coord-based routes, we need a stable key. 
+    // The simple stringification above works for session/memory cache.
 
     try {
-      fromCoords = await this.geocodeLocation(fromAddress);
-      toCoords = await this.geocodeLocation(toAddress);
+      // 1. Resolve Pickup
+      if (!fromCoords) {
+        fromCoords = await this.geocodeLocation(fromAddress);
+      }
+
+      // 2. Resolve Drop
+      if (!toCoords) {
+        toCoords = await this.geocodeLocation(toAddress);
+      }
 
       const metrics = await this.fetchRouteMetrics(fromCoords, toCoords);
       routeMemoryCache.set(cacheKey, metrics);
-      writeToStorage(routeStorageKey(normalizedFrom, normalizedTo), metrics);
+      // We can create a fake "address" key for storage if needed, or just skip per-session storage for manual pins
+      // to avoid filling it with unique coords.
+      if (typeof fromAddress === 'string' && typeof toAddress === 'string') {
+        writeToStorage(routeStorageKey(normalizedFrom, normalizedTo), metrics);
+      }
       return metrics;
     } catch (error) {
       console.error('Distance calculation error:', error);
@@ -233,7 +266,6 @@ const RoutingService = {
       if (fromCoords && toCoords) {
         const fallback = this.buildFallbackMetrics(fromCoords, toCoords);
         routeMemoryCache.set(cacheKey, fallback);
-        writeToStorage(routeStorageKey(normalizedFrom, normalizedTo), fallback);
         return fallback;
       }
 

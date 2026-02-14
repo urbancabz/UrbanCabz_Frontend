@@ -6,8 +6,11 @@ import {
   customerSignup,
   businessLogin,
   businessSignup,
+  b2bSetPassword,
   requestPasswordReset,
   completePasswordReset,
+  verifyPhone,
+  resendVerificationOtp,
 } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -25,6 +28,8 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const isBusiness = variant === "business";
   const { loginCustomer } = useAuth();
   const navigate = useNavigate();
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Form states
   const [formData, setFormData] = useState({
@@ -34,7 +39,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     email: "",
     password: "",
     // Business fields
-    companyId: "",
     companyName: "",
     companyEmail: "",
     gstNumber: "",
@@ -48,6 +52,10 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotForm, setForgotForm] = useState(initialForgotState);
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Verification State
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationData, setVerificationData] = useState({ userId: null, otp: "" });
 
   // Handle input changes
   const handleChange = (e) => {
@@ -63,11 +71,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     e.preventDefault();
     setError("");
     setSuccess("");
-
-    console.log('📝 Customer Login Form Data:', {
-      email: formData.email,
-      password: '***hidden***'
-    });
 
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
@@ -108,13 +111,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setError("");
     setSuccess("");
 
-    console.log('📝 Customer Signup Form Data:', {
-      fullName: formData.fullName,
-      mobile: formData.mobile,
-      email: formData.email,
-      password: '***hidden***'
-    });
-
     if (!formData.fullName || !formData.mobile || !formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
@@ -138,14 +134,46 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setLoading(false);
 
     if (result.success) {
-      setSuccess(result.message);
-      setTimeout(() => {
-        onClose();
-        // Optional: Refresh page or redirect
-        // window.location.reload();
-      }, 1500);
+      if (result.verificationPending) {
+        // Show verification screen
+        setVerificationData({ userId: result.user?.id, otp: "" });
+        setShowVerification(true);
+        setSuccess("Account created! Please verify your mobile number.");
+      } else {
+        setSuccess(result.message);
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
     } else {
       setError(result.message);
+    }
+  };
+
+  const handleVerifySubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!verificationData.otp) {
+      setError("Please enter OTP");
+      return;
+    }
+
+    setLoading(true);
+    const result = await verifyPhone(verificationData.userId, verificationData.otp);
+    setLoading(false);
+
+    if (result.success) {
+      setSuccess("Phone verified! Logging you in...");
+      // Auto login or just close
+      setTimeout(() => {
+        onClose();
+        navigate("/"); // Refresh or redirect
+        window.location.reload();
+      }, 1500);
+    } else {
+      setError(result.message || "Invalid OTP");
     }
   };
 
@@ -155,13 +183,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setError("");
     setSuccess("");
 
-    console.log('📝 Business Login Form Data:', {
-      companyId: formData.companyId,
-      email: formData.email,
-      password: '***hidden***'
-    });
-
-    if (!formData.companyId || !formData.email || !formData.password) {
+    if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
@@ -169,7 +191,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setLoading(true);
 
     const result = await businessLogin({
-      companyId: formData.companyId,
       email: formData.email,
       password: formData.password,
     });
@@ -177,14 +198,54 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setLoading(false);
 
     if (result.success) {
+      if (result.data?.isFirstLogin) {
+        setIsFirstLogin(true);
+        setSuccess("Credentials verified! Please create your permanent password.");
+        return;
+      }
       setSuccess(result.message);
       setTimeout(() => {
         onClose();
-        // Optional: Redirect to business dashboard
-        // window.location.href = "/business/dashboard";
+        navigate("/business/dashboard");
       }, 1500);
     } else {
       setError(result.message);
+    }
+  };
+
+  // Handle B2B Set Password
+  const handleB2BSetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (formData.password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+
+    const result = await b2bSetPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    setLoading(false);
+
+    if (result.success) {
+      setSuccess("Account set up successfully! Welcome.");
+      setTimeout(() => {
+        onClose();
+        navigate("/business/dashboard");
+      }, 1500);
+    } else {
+      setError(result.message || "Failed to set password");
     }
   };
 
@@ -193,14 +254,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     e.preventDefault();
     setError("");
     setSuccess("");
-
-    console.log('📝 Business Signup Form Data:', {
-      companyName: formData.companyName,
-      companyEmail: formData.companyEmail,
-      gstNumber: formData.gstNumber,
-      email: formData.email,
-      password: '***hidden***'
-    });
 
     if (!formData.companyName || !formData.companyEmail || !formData.email || !formData.password) {
       setError("Please fill in all required fields");
@@ -260,7 +313,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
 
       if (result.success) {
         setSuccess(
-          `OTP sent to WhatsApp (${result.data?.destination || "registered number"})`
+          `OTP sent via SMS (${result.data?.destination || "registered number"})`
         );
         setForgotForm((prev) => ({
           ...prev,
@@ -331,7 +384,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setForgotLoading(false);
 
     if (result.success) {
-      setSuccess("New OTP sent to your WhatsApp number.");
+      setSuccess("New OTP sent to your mobile number.");
       setForgotForm((prev) => ({
         ...prev,
         resetId: result.data?.resetId,
@@ -359,6 +412,8 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
       gstNumber: "",
     });
     setForgotForm(initialForgotState);
+    setShowVerification(false);
+    setVerificationData({ userId: null, otp: "" });
   };
 
   return (
@@ -389,8 +444,8 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
           <div className="bg-black/20 p-1 rounded-full flex gap-1 relative border border-white/10">
             {[
               { label: isBusiness ? "Business Login" : "Login", value: true },
-              { label: isBusiness ? "Business Sign Up" : "Sign Up", value: false }
-            ].map((tab) => (
+              (!isBusiness) && { label: "Sign Up", value: false }
+            ].filter(Boolean).map((tab) => (
               <button
                 key={tab.label}
                 onClick={() => !loading && handleTabSwitch(tab.value)}
@@ -430,7 +485,39 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
           className="p-6 sm:p-8"
         >
           <AnimatePresence mode="wait">
-            {isLogin ? (
+            {showVerification ? (
+              <motion.form
+                key="verification"
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.32, ease: "easeInOut" }}
+                onSubmit={handleVerifySubmit}
+              >
+                <h2 className="text-2xl font-semibold text-center mb-5">Verify Mobile</h2>
+                <p className="text-white/70 text-center text-sm mb-4">Enter the OTP sent to your phone</p>
+
+                <div className="mb-4">
+                  <label className="block text-sm text-white/85 mb-1">OTP</label>
+                  <input
+                    type="text"
+                    value={verificationData.otp}
+                    onChange={(e) => setVerificationData({ ...verificationData, otp: e.target.value })}
+                    placeholder="Enter 6-digit OTP"
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 font-bold rounded-xl shadow-lg hover:shadow-yellow-400/20 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50"
+                >
+                  {loading ? "Verifying..." : "Verify & Login"}
+                </button>
+              </motion.form>
+            ) : isLogin ? (
               showForgotPassword ? (
                 <motion.form
                   key="forgot-password"
@@ -542,23 +629,8 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                   onSubmit={isBusiness ? handleBusinessLogin : handleCustomerLogin}
                 >
                   <h2 className="text-2xl font-semibold text-center mb-5">
-                    {isBusiness ? "Business Login" : "Welcome Back"}
+                    {isFirstLogin ? "Set Your Password" : isBusiness ? "Business Login" : "Welcome Back"}
                   </h2>
-
-                  {isBusiness && (
-                    <div className="mb-4">
-                      <label className="block text-sm text-white/85 mb-1">Company ID</label>
-                      <input
-                        type="text"
-                        name="companyId"
-                        value={formData.companyId}
-                        onChange={handleChange}
-                        placeholder="Your Company ID"
-                        disabled={loading}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
-                      />
-                    </div>
-                  )}
 
                   <div className="mb-4">
                     <label className="block text-sm text-white/85 mb-1">
@@ -570,13 +642,15 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@example.com"
-                      disabled={loading}
+                      disabled={loading || isFirstLogin}
                       className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
                     />
                   </div>
 
                   <div className="mb-3">
-                    <label className="block text-sm text-white/85 mb-1">Password</label>
+                    <label className="block text-sm text-white/85 mb-1">
+                      {isFirstLogin ? "Create Permanent Password" : "Password"}
+                    </label>
                     <input
                       type="password"
                       name="password"
@@ -588,22 +662,39 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                     />
                   </div>
 
-                  <div className="flex justify-end mb-5">
-                    <button
-                      type="button"
-                      onClick={handleForgotToggle}
-                      className="text-sm text-yellow-300 hover:underline"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
+                  {isFirstLogin && (
+                    <div className="mb-3">
+                      <label className="block text-sm text-white/85 mb-1">Confirm New Password</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        disabled={loading}
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
+                      />
+                    </div>
+                  )}
+
+                  {!isFirstLogin && (
+                    <div className="flex justify-end mb-5">
+                      <button
+                        type="button"
+                        onClick={handleForgotToggle}
+                        className="text-sm text-yellow-300 hover:underline"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
 
                   <button
+                    onClick={isFirstLogin ? handleB2BSetPassword : (isBusiness ? handleBusinessLogin : handleCustomerLogin)}
                     type="submit"
                     disabled={loading}
                     className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 font-bold rounded-xl shadow-lg hover:shadow-yellow-400/20 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    {loading ? "Logging in..." : isBusiness ? "Business Login" : "Login"}
+                    {loading ? "Processing..." : isFirstLogin ? "Set Password & Login" : isBusiness ? "Business Login" : "Login"}
                   </button>
                 </motion.form>
               )

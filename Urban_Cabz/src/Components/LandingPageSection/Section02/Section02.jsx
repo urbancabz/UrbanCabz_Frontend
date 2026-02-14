@@ -52,18 +52,18 @@ export default function Section02() {
   ];
 
   return (
-  <div className="w-full bg-white text-gray-800">
-    <div className="pt-5 md:pt-0"> {/* Small top spacing from hero */}
-      <WhyChooseUs
-        title="Why Choose"
-        subtitle="Experience unmatched comfort, reliability, and safety with every ride."
-        features={features}
-      />
-    </div>
+    <div className="w-full bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 transition-colors duration-300">
+      <div className="pt-5 md:pt-0"> {/* Small top spacing from hero */}
+        <WhyChooseUs
+          title="Why Choose"
+          subtitle="Experience unmatched comfort, reliability, and safety with every ride."
+          features={features}
+        />
+      </div>
 
-    <div className="mt-8 md:mt-0"> {/* Controlled spacing between sections */}
-      <Services services={services} />
+      <div className="mt-8 md:mt-0"> {/* Controlled spacing between sections */}
+        <Services services={services} />
+      </div>
     </div>
-  </div>
-);
+  );
 }

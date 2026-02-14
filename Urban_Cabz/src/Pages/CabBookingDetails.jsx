@@ -4,6 +4,7 @@ import BookingDetailsMain from "../Components/BookingDetails/BookingDetailsMain"
 import BookingDetailsSidebar from "../Components/BookingDetails/BookingDetailsSidebar";
 import { useAuth } from "../contexts/AuthContext";
 import { initiateRazorpayPayment } from "../services/paymentService";
+import { fetchPricingSettings } from "../services/fleetService";
 
 /**
  * CabBookingDetails page
@@ -23,6 +24,15 @@ export default function CabBookingDetails() {
     remarks: ""
   });
   const [formErrors, setFormErrors] = React.useState({});
+  const [pricingSettings, setPricingSettings] = React.useState(null);
+
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      const res = await fetchPricingSettings();
+      if (res.success) setPricingSettings(res.data);
+    };
+    loadSettings();
+  }, []);
 
   const handleFormChange = (field, value) => {
     setPassengerDetails(prev => ({ ...prev, [field]: value }));
@@ -45,26 +55,41 @@ export default function CabBookingDetails() {
   const basePrice = listing.basePrice ?? 12;
 
   const calculatePrice = () => {
-    if (!distanceKm) return 0;
+    if (!distanceKm || !pricingSettings) return { total: 0, billableDistance: 0 };
 
     let billableDistance = 0;
-    const MIN_KM_PER_DAY = 300;
+    const RULE_MIN_KM = 300;
+
+    const {
+      min_km_threshold,
+      min_km_airport_apply,
+      min_km_oneway_apply,
+      min_km_roundtrip_apply
+    } = pricingSettings;
+
+    // Check if 300km rule should be applied
+    let applyRule = false;
+    if (distanceKm > min_km_threshold) {
+      if (rideType === "airport" && min_km_airport_apply) applyRule = true;
+      else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
+      else if (rideType === "roundtrip" && min_km_roundtrip_apply) applyRule = true;
+    }
+
+    const effectiveMinKmPerDay = applyRule ? RULE_MIN_KM : 0;
 
     if (rideType === "oneway" || rideType === "airport") {
-      // One-way: Base 300km
-      billableDistance = Math.max(MIN_KM_PER_DAY, distanceKm);
+      billableDistance = Math.max(effectiveMinKmPerDay, distanceKm);
     } else if (rideType === "roundtrip") {
-      // Round-trip: 300km * number of days
       let days = 1;
       if (pickupDate && returnDate && pickupDate !== "—" && returnDate !== "—") {
         const start = new Date(pickupDate);
         const end = new Date(returnDate);
         const diffTime = Math.abs(end - start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        days = diffDays + 1; // Include both start and end day
+        days = diffDays + 1;
       }
 
-      const baseKm = days * MIN_KM_PER_DAY;
+      const baseKm = days * effectiveMinKmPerDay;
       const actualKm = distanceKm * 2;
       billableDistance = Math.max(baseKm, actualKm);
     }
