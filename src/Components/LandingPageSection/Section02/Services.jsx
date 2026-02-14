@@ -19,10 +19,10 @@ export default function Services({ services }) {
   };
 
   return (
-    <div className="px-4 md:px-20 lg:px-32 pb-20 md:pb-32 bg-slate-50">
+    <div className="px-4 md:px-20 lg:px-32 pb-20 md:pb-32 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       <div className="text-center mb-10 md:mb-16">
-        <h2 className="text-xs md:text-sm font-bold tracking-[0.2em] text-yellow-600 uppercase mb-2 md:mb-3">Our Services</h2>
-        <h3 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
+        <h2 className="text-xs md:text-sm font-bold tracking-[0.2em] text-yellow-600 dark:text-yellow-500 uppercase mb-2 md:mb-3">Our Services</h2>
+        <h3 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight">
           Experiences crafted for <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">every journey.</span>
         </h3>
       </div>

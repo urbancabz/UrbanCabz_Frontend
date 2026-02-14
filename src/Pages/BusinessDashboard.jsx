@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import BusinessBookings from "../Components/Business/BusinessBookings";
 import BusinessProfile from "../Components/Business/BusinessProfile";
 import BusinessPayments from "../Components/Business/BusinessPayments";
@@ -16,6 +17,7 @@ import {
 
 export default function BusinessDashboard() {
     const { logout } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("bookings"); // "bookings" or "profile"
     const [company, setCompany] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -30,6 +32,11 @@ export default function BusinessDashboard() {
         }
         loadData();
     }, []);
+
+    const handleLogout = () => {
+        logout();
+        navigate("/b2b");
+    };
 
     const menuItems = [
         { id: "bookings", label: "Bookings", icon: MapIcon },
@@ -123,7 +130,7 @@ export default function BusinessDashboard() {
 
                 <div className="p-6 border-t border-white/5">
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="w-full flex items-center gap-3 p-4 rounded-2xl text-zinc-500 hover:bg-rose-500/5 hover:text-rose-400 transition-all group font-black uppercase tracking-widest text-[10px]"
                     >
                         <div className="h-8 w-8 rounded-xl bg-zinc-900 flex items-center justify-center group-hover:bg-rose-500/10 transition-colors">

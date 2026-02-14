@@ -72,11 +72,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setError("");
     setSuccess("");
 
-    console.log('📝 Customer Login Form Data:', {
-      email: formData.email,
-      password: '***hidden***'
-    });
-
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
@@ -115,13 +110,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     e.preventDefault();
     setError("");
     setSuccess("");
-
-    console.log('📝 Customer Signup Form Data:', {
-      fullName: formData.fullName,
-      mobile: formData.mobile,
-      email: formData.email,
-      password: '***hidden***'
-    });
 
     if (!formData.fullName || !formData.mobile || !formData.email || !formData.password) {
       setError("Please fill in all fields");
@@ -195,12 +183,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setError("");
     setSuccess("");
 
-    console.log('📝 Business Login Form Data:', {
-      companyId: formData.companyId,
-      email: formData.email,
-      password: '***hidden***'
-    });
-
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
@@ -272,14 +254,6 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     e.preventDefault();
     setError("");
     setSuccess("");
-
-    console.log('📝 Business Signup Form Data:', {
-      companyName: formData.companyName,
-      companyEmail: formData.companyEmail,
-      gstNumber: formData.gstNumber,
-      email: formData.email,
-      password: '***hidden***'
-    });
 
     if (!formData.companyName || !formData.companyEmail || !formData.email || !formData.password) {
       setError("Please fill in all required fields");

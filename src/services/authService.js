@@ -23,9 +23,7 @@ function isAdminUser(data) {
     data?.user?.role_name ||
     data?.role ||
     data?.user?.roles?.[0];
-  const isAdmin = (role || '').toString().toLowerCase() === 'admin';
-  console.log('🔍 isAdminUser check:', { role, isAdmin });
-  return isAdmin;
+  return (role || '').toString().toLowerCase() === 'admin';
 }
 
 function persistCustomerProfile(profile) {
@@ -47,12 +45,6 @@ export async function customerLogin(credentials) {
     password: credentials.password,
   };
 
-  console.log('🔵 Customer Login Request:', {
-    url: `${API_BASE_URL}/auth/login`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -62,9 +54,7 @@ export async function customerLogin(credentials) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🔵 Customer Login Response Status:', response.status);
     const data = await response.json();
-    console.log('🔵 Customer Login Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -95,11 +85,7 @@ export async function customerLogin(credentials) {
       message: data.message || 'Login successful',
     };
   } catch (error) {
-    console.error('❌ Customer login error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Customer login error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -115,17 +101,11 @@ export async function customerLogin(credentials) {
  */
 export async function customerSignup(userData) {
   const requestData = {
-    fullName: userData.fullName,
-    mobile: userData.mobile,
+    name: userData.fullName,
+    phone: userData.mobile,
     email: userData.email,
     password: userData.password,
   };
-
-  console.log('🟢 Customer Signup Request:', {
-    url: `${API_BASE_URL}/auth/register`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
 
   try {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -136,9 +116,7 @@ export async function customerSignup(userData) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🟢 Customer Signup Response Status:', response.status);
     const data = await response.json();
-    console.log('🟢 Customer Signup Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -169,11 +147,7 @@ export async function customerSignup(userData) {
       message: data.message || 'Signup successful',
     };
   } catch (error) {
-    console.error('❌ Customer signup error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Customer signup error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -194,12 +168,6 @@ export async function businessLogin(credentials) {
     password: credentials.password,
   };
 
-  console.log('🟡 Business Login Request:', {
-    url: `${API_BASE_URL}/auth/business/login`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/b2b/login`, {
       method: 'POST',
@@ -209,9 +177,7 @@ export async function businessLogin(credentials) {
       body: JSON.stringify({ email: credentials.email, password: credentials.password }),
     });
 
-    console.log('🟡 Business Login Response Status:', response.status);
     const data = await response.json();
-    console.log('🟡 Business Login Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -238,11 +204,7 @@ export async function businessLogin(credentials) {
       message: data.message || 'Login successful',
     };
   } catch (error) {
-    console.error('❌ Business login error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Business login error');
     return {
       success: false,
       message: 'Network error. Please try again.',
@@ -265,12 +227,6 @@ export async function businessSignup(businessData) {
     password: businessData.password,
   };
 
-  console.log('🟠 Business Signup Request:', {
-    url: `${API_BASE_URL}/auth/business/signup`,
-    method: 'POST',
-    data: { ...requestData, password: '***hidden***' }
-  });
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/business/signup`, {
       method: 'POST',
@@ -280,9 +236,7 @@ export async function businessSignup(businessData) {
       body: JSON.stringify(requestData),
     });
 
-    console.log('🟠 Business Signup Response Status:', response.status);
     const data = await response.json();
-    console.log('🟠 Business Signup Response Data:', data);
 
     if (!response.ok) {
       return {
@@ -309,11 +263,7 @@ export async function businessSignup(businessData) {
       message: data.message || 'Signup successful',
     };
   } catch (error) {
-    console.error('❌ Business signup error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Business signup error');
     return {
       success: false,
       message: 'Network error. Please try again.',

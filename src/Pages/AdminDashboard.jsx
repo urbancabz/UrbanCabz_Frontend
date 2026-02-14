@@ -14,6 +14,7 @@ import B2BBookingDetailView from "../Components/Admin/B2BBookingDetailView";
 import FleetManager from "../Components/Admin/FleetManager";
 import DriverList from "../Components/Admin/DriverList";
 import PricingSettings from "../Components/Admin/PricingSettings";
+import CustomerManager from "../Components/Admin/CustomerManager";
 
 import {
   fetchAdminBookings,
@@ -110,6 +111,7 @@ export default function AdminDashboard() {
       title: "B2C Operations",
       items: [
         { id: "DISPATCH", label: "Live Dispatch", icon: "⚡" },
+        { id: "CUSTOMERS", label: "Customers", icon: "👥" },
         { id: "PENDING", label: "Pending Payments", icon: "⏳" },
         { id: "HISTORY", label: "Completed Rides", icon: "✅" },
         { id: "CANCELLED", label: "Cancelled Rides", icon: "❌" },
@@ -292,6 +294,7 @@ export default function AdminDashboard() {
               )}
               {activeView === "B2B" && <B2BRequestsList />}
               {activeView === "COMPANIES" && <CompanyList />}
+              {activeView === "CUSTOMERS" && <CustomerManager />}
               {activeView === "FLEET" && <FleetManager />}
               {activeView === "DRIVERS" && <DriverList />}
               {activeView === "PRICING" && <PricingSettings />}

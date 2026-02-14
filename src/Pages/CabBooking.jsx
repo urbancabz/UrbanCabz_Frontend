@@ -67,7 +67,7 @@ export default function CabBooking() {
   };
 
   return (
-    <div className="pt-24 pb-12 bg-gray-50 min-h-screen">
+    <div className="pt-24 pb-12 bg-gray-50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="
@@ -110,9 +110,9 @@ export default function CabBooking() {
         {/* Main layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-slate-800 mb-2 text-base sm:text-lg">Available Vehicles</h3>
-              <p className="text-sm sm:text-base text-slate-600">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-slate-800 transition-colors">
+              <h3 className="font-bold text-slate-800 dark:text-white mb-2 text-base sm:text-lg">Available Vehicles</h3>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400">
                 {distanceKm
                   ? `Prices calculated for ${distanceKm} km journey`
                   : 'Calculating distance...'}
@@ -120,8 +120,32 @@ export default function CabBooking() {
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-yellow-500" />
+              <div className="space-y-4">
+                {/* Show 3 skeleton cards while loading */}
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden animate-pulse">
+                    <div className="p-5 sm:p-7">
+                      <div className="flex flex-col sm:flex-row gap-5 sm:gap-8">
+                        <div className="w-full sm:w-40 flex-shrink-0">
+                          <div className="skeleton rounded-2xl h-36 sm:h-32" />
+                          <div className="skeleton h-6 w-20 mx-auto mt-3 rounded-full" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="skeleton h-7 w-48 rounded mb-3" />
+                          <div className="skeleton h-5 w-32 rounded mb-4" />
+                          <div className="flex gap-3 mb-4">
+                            <div className="skeleton h-8 w-24 rounded-lg" />
+                            <div className="skeleton h-8 w-20 rounded-lg" />
+                          </div>
+                        </div>
+                        <div className="sm:min-w-[180px] sm:border-l border-slate-100 dark:border-slate-800 sm:pl-8">
+                          <div className="skeleton h-10 w-28 rounded ml-auto mb-4" />
+                          <div className="skeleton h-12 w-full rounded-xl" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : activeListings.length === 0 ? (
               <div className="text-center py-10 text-slate-500">No vehicles available at the moment.</div>

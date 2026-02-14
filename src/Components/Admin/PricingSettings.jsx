@@ -6,7 +6,10 @@ export default function PricingSettings() {
         min_km_threshold: 100,
         min_km_airport_apply: false,
         min_km_oneway_apply: false,
-        min_km_roundtrip_apply: false
+        min_km_roundtrip_apply: false,
+        service_airport_enabled: true,
+        service_oneway_enabled: true,
+        service_roundtrip_enabled: true
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -32,7 +35,10 @@ export default function PricingSettings() {
                     min_km_threshold: data.data.min_km_threshold,
                     min_km_airport_apply: data.data.min_km_airport_apply,
                     min_km_oneway_apply: data.data.min_km_oneway_apply,
-                    min_km_roundtrip_apply: data.data.min_km_roundtrip_apply
+                    min_km_roundtrip_apply: data.data.min_km_roundtrip_apply,
+                    service_airport_enabled: data.data.service_airport_enabled ?? true,
+                    service_oneway_enabled: data.data.service_oneway_enabled ?? true,
+                    service_roundtrip_enabled: data.data.service_roundtrip_enabled ?? true
                 });
             }
         } catch (error) {
@@ -84,8 +90,8 @@ export default function PricingSettings() {
 
             {message && (
                 <div className={`px-4 py-2 rounded-lg text-sm ${message.includes("success")
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-rose-50 text-rose-700 border border-rose-200"
                     }`}>
                     {message}
                 </div>
@@ -168,6 +174,65 @@ export default function PricingSettings() {
                                         onChange={(e) => setSettings({ ...settings, min_km_roundtrip_apply: e.target.checked })}
                                     />
                                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Service Visibility */}
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b pb-2">
+                            Service Visibility
+                        </h3>
+                        <p className="text-xs text-slate-500 mb-4">
+                            Enable or disable services globally. Disabled services will be hidden from the website.
+                        </p>
+                        <div className="space-y-3">
+                            <div className={`flex items-center justify-between p-3 rounded-lg border ${!settings.service_airport_enabled ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
+                                <div>
+                                    <h4 className="font-bold text-slate-700 text-sm">Airport Transfer</h4>
+                                    <p className="text-xs text-slate-500">Show airport transfer option on booking forms</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={settings.service_airport_enabled}
+                                        onChange={(e) => setSettings({ ...settings, service_airport_enabled: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
+
+                            <div className={`flex items-center justify-between p-3 rounded-lg border ${!settings.service_oneway_enabled ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
+                                <div>
+                                    <h4 className="font-bold text-slate-700 text-sm">One-Way</h4>
+                                    <p className="text-xs text-slate-500">Show one-way trip option on booking forms</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={settings.service_oneway_enabled}
+                                        onChange={(e) => setSettings({ ...settings, service_oneway_enabled: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
+
+                            <div className={`flex items-center justify-between p-3 rounded-lg border ${!settings.service_roundtrip_enabled ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-100'}`}>
+                                <div>
+                                    <h4 className="font-bold text-slate-700 text-sm">Round Trip</h4>
+                                    <p className="text-xs text-slate-500">Show round trip option on booking forms</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={settings.service_roundtrip_enabled}
+                                        onChange={(e) => setSettings({ ...settings, service_roundtrip_enabled: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                 </label>
                             </div>
                         </div>

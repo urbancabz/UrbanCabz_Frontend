@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CompanyFleetManage from "./CompanyFleetManage";
 import useDragScroll from "../../hooks/useDragScroll";
+import { recordCompanyPayment, updateCompany } from "../../services/adminService";
+import { toast } from "react-hot-toast";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
@@ -19,6 +21,11 @@ export default function CompanyDetails({ company, onClose }) {
 
     const [showFleetModal, setShowFleetModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+
+    // Edit Form State
+    const [editForm, setEditForm] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
 
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState("");
@@ -54,43 +61,72 @@ export default function CompanyDetails({ company, onClose }) {
 
     const handleRecordPayment = async () => {
         if (!paymentAmount || isNaN(paymentAmount) || parseFloat(paymentAmount) <= 0) {
-            alert("Please enter a valid amount");
+            toast.error("Please enter a valid amount");
             return;
         }
 
-        setPaymentLoading(true);
-        try {
-            const token = localStorage.getItem("adminToken");
-            const response = await fetch(`${API_BASE_URL}/b2b/payments`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    company_id: company.id,
-                    amount: parseFloat(paymentAmount),
-                    payment_mode: paymentMode,
-                    reference_no: paymentReference,
-                    notes: paymentNote
-                })
-            });
+        if (!window.confirm(`Confirm payment of ₹${paymentAmount} via ${paymentMode}?`)) return;
 
-            const data = await response.json();
-            if (data.success) {
-                setShowPaymentModal(false);
-                setPaymentAmount("");
-                setPaymentNote("");
-                setPaymentReference("");
-                loadCompanyData();
-            } else {
-                alert(data.message || "Failed to record payment");
-            }
-        } catch (error) {
-            console.error("Error recording payment:", error);
-            alert("Internal server error");
-        } finally {
-            setPaymentLoading(false);
+        setPaymentLoading(true);
+        const res = await recordCompanyPayment({
+            company_id: company.id,
+            amount: parseFloat(paymentAmount),
+            payment_mode: paymentMode,
+            reference_no: paymentReference,
+            notes: paymentNote
+        });
+        setPaymentLoading(false);
+
+        if (res.success) {
+            toast.success("Payment recorded successfully");
+            setShowPaymentModal(false);
+            setPaymentAmount("");
+            setPaymentNote("");
+            setPaymentReference("");
+            loadCompanyData();
+        } else {
+            toast.error(res.message || "Failed to record payment");
+        }
+    };
+
+    const openEditModal = () => {
+        setEditForm({
+            company_name: company.company_name,
+            company_email: company.company_email,
+            company_phone: company.company_phone,
+            address: company.address || '',
+            city: company.city || '',
+            state: company.state || '',
+            pincode: company.pincode || '',
+            gst_number: company.gst_number || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditCompany = async (e) => {
+        e.preventDefault();
+        setIsEditing(true);
+        const res = await updateCompany(company.id, editForm);
+        setIsEditing(false);
+
+        if (res.success) {
+            toast.success("Company details updated");
+            setShowEditModal(false);
+            // We need to refresh the parent list too, but strictly speaking calling onClose() might be better 
+            // but we want to stay here. We can reload local data but the parent list won't update until close.
+            // For now, let's just update local view if we had local state for company details (we use props).
+            // Since we use props 'company', we can't easily update the view without parent update.
+            // Ideally we should have a callback onUpdate.
+            // For now, let's just close the modal and maybe the parent will refresh if we trigger something?
+            // Actually, let's just reload the data if we were fetching company details ourselves?
+            // Wait, we are fetching 'bookings' but company details come from props.
+            // The user will see old data in header until they close and reopen CompanyDetails.
+            // To fix this properly, we should refetch company details here or ask parent to refresh.
+            // Let's rely on the user closing and reopening for now or just reload the page/component?
+            // Actually, we can just call onClose() to force refresh from list.
+            onClose();
+        } else {
+            toast.error(res.message || "Failed to update company");
         }
     };
 
@@ -187,6 +223,12 @@ export default function CompanyDetails({ company, onClose }) {
                             className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
                         >
                             💸 Record Payment
+                        </button>
+                        <button
+                            onClick={openEditModal}
+                            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
+                        >
+                            ✏️ Edit Details
                         </button>
                         <button onClick={onClose} className="p-3 text-slate-400 hover:text-slate-600 transition-colors">
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -467,6 +509,72 @@ export default function CompanyDetails({ company, onClose }) {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Edit Company Modal */}
+            <AnimatePresence>
+                {showEditModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <h3 className="text-xl font-black text-slate-900">Edit Company Details</h3>
+                            </div>
+                            <form onSubmit={handleEditCompany} className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Company Name</label>
+                                        <input required type="text" value={editForm.company_name} onChange={e => setEditForm({ ...editForm, company_name: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">GST Number</label>
+                                        <input type="text" value={editForm.gst_number} onChange={e => setEditForm({ ...editForm, gst_number: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Email</label>
+                                        <input required type="email" value={editForm.company_email} onChange={e => setEditForm({ ...editForm, company_email: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Phone</label>
+                                        <input required type="text" value={editForm.company_phone} onChange={e => setEditForm({ ...editForm, company_phone: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold outline-none focus:border-indigo-500" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase text-slate-500">Address</label>
+                                    <input type="text" value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">City</label>
+                                        <input type="text" value={editForm.city} onChange={e => setEditForm({ ...editForm, city: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">State</label>
+                                        <input type="text" value={editForm.state} onChange={e => setEditForm({ ...editForm, state: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Pincode</label>
+                                        <input type="text" value={editForm.pincode} onChange={e => setEditForm({ ...editForm, pincode: e.target.value })} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex gap-3">
+                                    <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">Cancel</button>
+                                    <button type="submit" disabled={isEditing} className="flex-[2] py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50">
+                                        {isEditing ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

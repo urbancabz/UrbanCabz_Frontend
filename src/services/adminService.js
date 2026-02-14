@@ -460,3 +460,128 @@ export async function cancelB2BBooking(bookingId, reason) {
     return { success: false, message: "Network error" };
   }
 }
+
+/**
+ * Record B2B Payment
+ */
+export async function recordCompanyPayment(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/b2b/payments`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to record payment" };
+    }
+    return { success: true, data: data.data, message: data.message };
+  } catch (error) {
+    console.error("recordCompanyPayment error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Create new company
+ */
+export async function createCompany(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/b2b/companies`, {
+      method: "POST",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to create company" };
+    }
+    return { success: true, data: data.data, message: data.message };
+  } catch (error) {
+    console.error("createCompany error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Update company details
+ */
+export async function updateCompany(id, payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/b2b/companies/${id}`, {
+      method: "PUT",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to update company" };
+    }
+    return { success: true, data: data.data, message: data.message };
+  } catch (error) {
+    console.error("updateCompany error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Fetch B2C users list
+ */
+export async function fetchUsers(search = "", page = 1) {
+  try {
+    const query = search ? `?search=${encodeURIComponent(search)}&page=${page}` : `?page=${page}`;
+    const response = await fetch(`${API_BASE_URL}/admin/users${query}`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Unable to load users" };
+    }
+    return { success: true, data: data.data };
+  } catch (error) {
+    console.error("fetchUsers error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Update user details
+ */
+export async function updateUser(id, payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
+      method: "PUT",
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to update user" };
+    }
+    return { success: true, data: data.data, message: data.message };
+  } catch (error) {
+    console.error("updateUser error:", error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Fetch User Bookings (History)
+ */
+export async function fetchUserBookings(userId, page = 1, limit = 10) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/bookings?page=${page}&limit=${limit}`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to load user bookings" };
+    }
+    return { success: true, data: data.data };
+  } catch (error) {
+    console.error("fetchUserBookings error:", error);
+    return { success: false, message: "Network error" };
+  }
+}

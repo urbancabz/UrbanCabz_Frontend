@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Calendar, Clock, Plane, ArrowRight, CornerDownRight, Navigation, Search, Map as MapIcon } from "lucide-react";
 import RoutingService from "../../../services/routingService";
+import { fetchPricingSettings } from "../../../services/fleetService";
 import CabLoadingScreen from "../../Loading/CabLoadingScreen";
 import LocationPickerModal from "../../Common/LocationPickerModal";
 
@@ -45,7 +46,51 @@ export default function Input({ destinationPath = "/cab-booking" }) {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [pickerType, setPickerType] = useState('pickup');
 
+  // Service visibility settings from admin
+  const [serviceSettings, setServiceSettings] = useState({
+    service_airport_enabled: true,
+    service_oneway_enabled: true,
+    service_roundtrip_enabled: true
+  });
+
   const navigate = useNavigate();
+
+  // Fetch service visibility settings on mount
+  useEffect(() => {
+    const loadServiceSettings = async () => {
+      try {
+        const res = await fetchPricingSettings();
+        if (res.success && res.data) {
+          setServiceSettings({
+            service_airport_enabled: res.data.service_airport_enabled ?? true,
+            service_oneway_enabled: res.data.service_oneway_enabled ?? true,
+            service_roundtrip_enabled: res.data.service_roundtrip_enabled ?? true
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load service settings:", err);
+      }
+    };
+    loadServiceSettings();
+  }, []);
+
+  // All ride type options
+  const allRideOptions = useMemo(() => [
+    { value: "airport", label: "Airport Transfer", shortLabel: "Airport", icon: Plane, enabled: serviceSettings.service_airport_enabled },
+    { value: "oneway", label: "One-Way", shortLabel: "One-Way", icon: Navigation, enabled: serviceSettings.service_oneway_enabled },
+    { value: "roundtrip", label: "Round Trip", shortLabel: "Round Trip", icon: CornerDownRight, enabled: serviceSettings.service_roundtrip_enabled },
+  ], [serviceSettings]);
+
+  // Filter to only enabled ride types
+  const availableRideOptions = useMemo(() => allRideOptions.filter(opt => opt.enabled), [allRideOptions]);
+
+  // Auto-select first available ride type if current selection is disabled
+  useEffect(() => {
+    const currentOption = allRideOptions.find(opt => opt.value === rideType);
+    if (currentOption && !currentOption.enabled && availableRideOptions.length > 0) {
+      setRideType(availableRideOptions[0].value);
+    }
+  }, [allRideOptions, rideType, availableRideOptions]);
 
   useEffect(() => {
     const errors = {};
@@ -249,25 +294,27 @@ export default function Input({ destinationPath = "/cab-booking" }) {
       >
         <div className="relative z-10">
           {/* Ride Type Tabs */}
-          <div className="grid grid-cols-3 md:flex md:justify-center gap-2 mb-6 md:mb-8 bg-black/20 p-1.5 rounded-2xl w-full md:w-fit mx-auto backdrop-blur-sm border border-white/5">
-            {[
-              { value: "airport", label: "Airport Transfer", shortLabel: "Airport", icon: Plane },
-              { value: "oneway", label: "One-Way", shortLabel: "One-Way", icon: Navigation },
-              { value: "roundtrip", label: "Round Trip", shortLabel: "Round Trip", icon: CornerDownRight },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setRideType(option.value)}
-                className={`flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-2 md:px-5 py-3 md:py-2.5 rounded-xl transition-all duration-300 font-medium ${rideType === option.value ? "bg-yellow-400 text-stone-950 shadow-lg shadow-yellow-400/20" : "text-stone-400 hover:text-white hover:bg-white/5"}`}
-              >
-                <option.icon className="w-5 h-5 md:w-4 md:h-4 mb-0.5 md:mb-0" />
-                <span className="text-[11px] leading-tight md:text-sm text-center">
-                  <span className="hidden sm:inline">{option.label}</span>
-                  <span className="sm:hidden">{option.shortLabel}</span>
-                </span>
-              </button>
-            ))}
-          </div>
+          {availableRideOptions.length > 0 ? (
+            <div className={`grid md:flex md:justify-center gap-2 mb-6 md:mb-8 bg-black/20 p-1.5 rounded-2xl w-full md:w-fit mx-auto backdrop-blur-sm border border-white/5`} style={{ gridTemplateColumns: `repeat(${availableRideOptions.length}, 1fr)` }}>
+              {availableRideOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setRideType(option.value)}
+                  className={`flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 px-2 md:px-5 py-3 md:py-2.5 rounded-xl transition-all duration-300 font-medium ${rideType === option.value ? "bg-yellow-400 text-stone-950 shadow-lg shadow-yellow-400/20" : "text-stone-400 hover:text-white hover:bg-white/5"}`}
+                >
+                  <option.icon className="w-5 h-5 md:w-4 md:h-4 mb-0.5 md:mb-0" />
+                  <span className="text-[11px] leading-tight md:text-sm text-center">
+                    <span className="hidden sm:inline">{option.label}</span>
+                    <span className="sm:hidden">{option.shortLabel}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-stone-400 text-sm">
+              No services available at the moment.
+            </div>
+          )}
 
           <AnimatePresence mode="wait">
             <motion.form

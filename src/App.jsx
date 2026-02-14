@@ -1,21 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import Footer from "./Components/Footer/Footer";
 import Navbar from "./Components/Navigation/Navbar";
-import B2BLandingPage from "./Pages/B2BLandingPage";
-import LandingPage from "./Pages/LandingPage";
-import CabBooking from "./Pages/CabBooking";
-import CabBookingDetails from "./Pages/CabBookingDetails";
-import AdminDashboard from "./Pages/AdminDashboard";
-import BusinessDashboard from "./Pages/BusinessDashboard";
-import BusinessBookRide from "./Pages/BusinessBookRide";
-
-import BusinessBookingDetails from "./Pages/BusinessBookingDetails";
-import PrivacyPolicy from "./Pages/Legal/PrivacyPolicy";
-import TermsAndConditions from "./Pages/Legal/TermsAndConditions";
-import RefundPolicy from "./Pages/Legal/RefundPolicy";
-import ContactUs from "./Pages/ContactUs";
-import ShippingPolicy from "./Pages/Legal/ShippingPolicy";
-import CompanyList from "./Components/Admin/CompanyList";
 import {
   BrowserRouter as Router,
   Routes,
@@ -25,6 +10,34 @@ import {
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import AdminRoute from "./Components/Navigation/AdminRoute";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { Toaster } from "react-hot-toast";
+
+// Lazy load pages for better code splitting
+const LandingPage = lazy(() => import("./Pages/LandingPage"));
+const B2BLandingPage = lazy(() => import("./Pages/B2BLandingPage"));
+const CabBooking = lazy(() => import("./Pages/CabBooking"));
+const CabBookingDetails = lazy(() => import("./Pages/CabBookingDetails"));
+const AdminDashboard = lazy(() => import("./Pages/AdminDashboard"));
+const BusinessDashboard = lazy(() => import("./Pages/BusinessDashboard"));
+const BusinessBookRide = lazy(() => import("./Pages/BusinessBookRide"));
+const BusinessBookingDetails = lazy(() => import("./Pages/BusinessBookingDetails"));
+const PrivacyPolicy = lazy(() => import("./Pages/Legal/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./Pages/Legal/TermsAndConditions"));
+const RefundPolicy = lazy(() => import("./Pages/Legal/RefundPolicy"));
+const ContactUs = lazy(() => import("./Pages/ContactUs"));
+const ShippingPolicy = lazy(() => import("./Pages/Legal/ShippingPolicy"));
+const CompanyList = lazy(() => import("./Components/Admin/CompanyList"));
+
+// Loading spinner for Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="flex flex-col items-center gap-4">
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 dark:border-slate-800 border-t-yellow-500" />
+      <p className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Loading...</p>
+    </div>
+  </div>
+);
 
 // Lightweight page transition wrapper
 const PageWrapper = ({ children }) => (
@@ -235,7 +248,9 @@ const AppLayout = () => {
     return (
       <>
         {!isAdminRoute && <Navbar />}
-        <AnimatedRoutes />
+        <Suspense fallback={<PageLoader />}>
+          <AnimatedRoutes />
+        </Suspense>
         {!isAdminRoute && <Footer />}
       </>
     );
@@ -244,7 +259,9 @@ const AppLayout = () => {
   return (
     <>
       {!hideNavFooter && <Navbar />}
-      <AnimatedRoutes />
+      <Suspense fallback={<PageLoader />}>
+        <AnimatedRoutes />
+      </Suspense>
       {!hideNavFooter && <Footer />}
     </>
   );
@@ -253,9 +270,12 @@ const AppLayout = () => {
 function App() {
   return (
     <div className="">
-      <Router>
-        <AppLayout />
-      </Router>
+      <ThemeProvider>
+        <Toaster position="top-center" />
+        <Router>
+          <AppLayout />
+        </Router>
+      </ThemeProvider>
     </div>
   );
 }

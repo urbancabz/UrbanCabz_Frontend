@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import RoutingService from "../../services/routingService";
 import RouteMap from "./RouteMap";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const INITIAL_METRICS = {
   distanceKm: null,
@@ -20,7 +21,9 @@ const isPlaceholderLocation = (value) => {
   return normalized === "pickup location" || normalized === "drop location";
 };
 
-export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pickupDate, pickupTime, onDistanceCalculated, isDark = false }) {
+export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pickupDate, pickupTime, onDistanceCalculated, isDark: initialIsDark = false }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark" || initialIsDark;
   const [tripMetrics, setTripMetrics] = useState(INITIAL_METRICS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -85,7 +88,7 @@ export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pic
     : tripMetrics.durationText || "—";
 
   return (
-    <div className={`${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-100 shadow-lg'} rounded-2xl border p-3 sm:p-5 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto`}>
+    <div className={`${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-100 shadow-lg'} dark:bg-slate-900 dark:border-slate-800 rounded-2xl border p-3 sm:p-5 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto transition-colors duration-300`}>
       {/* Map Preview */}
       <div className={`h-32 sm:h-48 rounded-xl mb-3 overflow-hidden ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-gray-100 border-gray-200'} relative border`}>
         {loading ? (

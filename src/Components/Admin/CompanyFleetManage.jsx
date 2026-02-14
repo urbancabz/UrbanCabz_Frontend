@@ -27,7 +27,7 @@ export default function CompanyFleetManage({ company, onClose }) {
                 fetch(`${API_BASE_URL}/b2b/companies/${company.id}/fleet`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch(`${API_BASE_URL}/fleet/public`, {
+                fetch(`${API_BASE_URL}/fleet`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
