@@ -44,14 +44,17 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId = null;
 
     const load = async () => {
-      const result = await fetchAdminBookings();
+      // Fetch both in parallel to reduce connection hold time
+      const [result, b2bRes] = await Promise.all([
+        fetchAdminBookings(),
+        fetchB2BBookings(),
+      ]);
       if (result.success && !cancelled) {
         setTickets(result.data.bookings || []);
       }
-
-      const b2bRes = await fetchB2BBookings();
       if (b2bRes.success && !cancelled) {
         setB2BBookings(b2bRes.data.bookings || []);
       }
@@ -69,14 +72,14 @@ export default function AdminDashboard() {
       await load();
       setLoading(false);
 
-      const intervalId = setInterval(load, 10000);
-      return () => {
-        cancelled = true;
-        clearInterval(intervalId);
-      };
+      // Poll every 30 seconds (was 10s — caused DB pool exhaustion)
+      intervalId = setInterval(load, 30000);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   const summary = useMemo(() => {
