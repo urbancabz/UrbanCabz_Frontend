@@ -32,7 +32,19 @@ function buildAuthHeaders() {
   return headers;
 }
 
+// Cache fetchAdminMe to prevent 3+ duplicate calls per page load
+// (Called from App.jsx, AdminRoute.jsx, and AdminDashboard.jsx simultaneously)
+let _adminMeCache = null;
+let _adminMeCacheTime = 0;
+const ADMIN_ME_CACHE_TTL = 60 * 1000; // 60 seconds
+
 export async function fetchAdminMe() {
+  // Return cached response if fresh
+  const now = Date.now();
+  if (_adminMeCache && (now - _adminMeCacheTime) < ADMIN_ME_CACHE_TTL) {
+    return _adminMeCache;
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/admin/me`, {
       method: "GET",
@@ -46,10 +58,10 @@ export async function fetchAdminMe() {
         message: data.message || "Unable to fetch admin profile",
       };
     }
-    return {
-      success: true,
-      data,
-    };
+    const result = { success: true, data };
+    _adminMeCache = result;
+    _adminMeCacheTime = Date.now();
+    return result;
   } catch (error) {
     console.error("fetchAdminMe error:", error);
     return {

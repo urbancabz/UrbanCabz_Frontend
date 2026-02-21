@@ -42,6 +42,9 @@ export default function AdminDashboard() {
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Only poll for bookings when on tabs that actually need them
+  const needsPolling = ["STATS", "B2C_DISPATCH", "B2B_DISPATCH"].includes(activeView);
+
   useEffect(() => {
     let cancelled = false;
     let intervalId = null;
@@ -72,15 +75,17 @@ export default function AdminDashboard() {
       await load();
       setLoading(false);
 
-      // Poll every 30 seconds (was 10s — caused DB pool exhaustion)
-      intervalId = setInterval(load, 30000);
+      // Poll every 60 seconds, only when on booking-related tabs
+      if (needsPolling) {
+        intervalId = setInterval(load, 60000);
+      }
     })();
 
     return () => {
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
     };
-  }, []);
+  }, [needsPolling]);
 
   const summary = useMemo(() => {
     const total = tickets.length;
