@@ -277,14 +277,16 @@ export default function FleetManager() {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="submit"
-                                    disabled={saving}
+                                    disabled={saving || uploading}
                                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
                                 >
                                     {saving
                                         ? "Saving..."
-                                        : editingVehicle
-                                            ? "Update Vehicle"
-                                            : "Add Vehicle"}
+                                        : uploading
+                                            ? "Uploading Image..."
+                                            : editingVehicle
+                                                ? "Update Vehicle"
+                                                : "Add Vehicle"}
                                 </button>
                                 <button
                                     type="button"
