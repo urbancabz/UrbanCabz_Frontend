@@ -24,6 +24,7 @@ import {
   fetchCancelledBookings,
   fetchPendingPayments,
   fetchB2BBookings,
+  fetchAdminDashboardSync,
 } from "../services/adminService";
 
 export default function AdminDashboard() {
@@ -38,6 +39,13 @@ export default function AdminDashboard() {
   const [adminInfo, setAdminInfo] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState("STATS");
+  const [dashboardStats, setDashboardStats] = useState({
+    totalBookings: 0,
+    completedBookings: 0,
+    pendingBookings: 0,
+    b2bBookings: 0,
+    activeDrivers: 0
+  });
 
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -50,16 +58,26 @@ export default function AdminDashboard() {
     let intervalId = null;
 
     const load = async () => {
-      // Fetch both in parallel to reduce connection hold time
-      const [result, b2bRes] = await Promise.all([
-        fetchAdminBookings(),
-        fetchB2BBookings(),
-      ]);
-      if (result.success && !cancelled) {
-        setTickets(result.data.bookings || []);
+      // Use the new aggregated dashboard sync endpoint to prevent connection pool exhaustion
+      // This single call provides all critical overview numbers without slamming the DB.
+      const syncRes = await fetchAdminDashboardSync();
+      if (syncRes.success && !cancelled) {
+        setDashboardStats(syncRes.data.stats);
       }
-      if (b2bRes.success && !cancelled) {
-        setB2BBookings(b2bRes.data.bookings || []);
+
+      // We still need the actual lists for dispatch tabs, but now they aren't competing 
+      // with 5 other endpoints on initial load.
+      if (needsPolling) {
+        const [result, b2bRes] = await Promise.all([
+          fetchAdminBookings(),
+          fetchB2BBookings(),
+        ]);
+        if (result.success && !cancelled) {
+          setTickets(result.data.bookings || []);
+        }
+        if (b2bRes.success && !cancelled) {
+          setB2BBookings(b2bRes.data.bookings || []);
+        }
       }
     };
 
@@ -92,13 +110,20 @@ export default function AdminDashboard() {
   }, [needsPolling]);
 
   const summary = useMemo(() => {
-    const total = tickets.length;
+    // We blend real-time ticket arrays with the dashboard stats
+    const total = dashboardStats.totalBookings;
     const paidCount = tickets.filter(b => b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))).length;
     const pendingPayment = tickets.filter(b => b.status === "PENDING_PAYMENT" && !b.payments?.some(p => p.status === 'SUCCESS')).length;
     const assigned = tickets.filter(b => (b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))) && b.taxi_assign_status === "ASSIGNED").length;
     const readyToAssign = paidCount - assigned;
-    return { total, assigned, readyToAssign, pendingPayment, paidCount };
-  }, [tickets]);
+    return {
+      total,
+      assigned,
+      readyToAssign,
+      pendingPayment: dashboardStats.pendingBookings,
+      paidCount: dashboardStats.completedBookings
+    };
+  }, [tickets, dashboardStats]);
 
   const loadHistoryData = async (view) => {
     setHistoryLoading(true);

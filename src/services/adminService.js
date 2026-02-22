@@ -100,6 +100,34 @@ export async function fetchAdminBookings() {
   }
 }
 
+export async function fetchAdminDashboardSync() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/dashboard-sync`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        success: false,
+        status: response.status,
+        message: data.message || "Unable to load dashboard sync data",
+      };
+    }
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("fetchAdminDashboardSync error:", error);
+    return {
+      success: false,
+      message: "Network error while loading dashboard sync data",
+      error: error.message,
+    };
+  }
+}
+
 export async function fetchAdminBookingTicket(bookingId) {
   try {
     const response = await fetch(
