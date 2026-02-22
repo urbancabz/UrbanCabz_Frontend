@@ -12,31 +12,36 @@ import {
     ExclamationCircleIcon
 } from "@heroicons/react/24/outline";
 
-export default function BusinessPayments({ company }) {
-    const [payments, setPayments] = useState([]);
-    const [billingSummary, setBillingSummary] = useState({ totalBilled: 0, totalPaid: 0, outstanding: 0 });
-    const [loading, setLoading] = useState(true);
+export default function BusinessPayments({ company, initialPayments = null, initialBilling = null }) {
+    const [payments, setPayments] = useState(initialPayments || []);
+    const [billingSummary, setBillingSummary] = useState(initialBilling || { totalBilled: 0, totalPaid: 0, outstanding: 0 });
+    const [loading, setLoading] = useState(!initialPayments && true);
     const [selectedMonth, setSelectedMonth] = useState("all");
 
     useEffect(() => {
-        async function fetchPayments() {
-            const result = await getCompanyPayments();
-            if (result.success) {
-                // Handle both direct array and nested object structure
-                const data = result.data?.payments || result.data || [];
-                setPayments(Array.isArray(data) ? data : []);
+        // Only fetch if initialPayments is null (e.g. not mounted from Dashboard sync)
+        if (!initialPayments) {
+            async function fetchPayments() {
+                const result = await getCompanyPayments();
+                if (result.success) {
+                    const data = result.data?.payments || result.data || [];
+                    setPayments(Array.isArray(data) ? data : []);
 
-                // Extract billing summary if available
-                if (result.data?.billingSummary) {
-                    setBillingSummary(result.data.billingSummary);
-                } else if (result.data?.stats) {
-                    setBillingSummary(result.data.stats);
+                    if (result.data?.billingSummary) {
+                        setBillingSummary(result.data.billingSummary);
+                    } else if (result.data?.stats) {
+                        setBillingSummary(result.data.stats);
+                    }
                 }
+                setLoading(false);
             }
+            fetchPayments();
+        } else {
+            setPayments(initialPayments);
+            if (initialBilling) setBillingSummary(initialBilling);
             setLoading(false);
         }
-        fetchPayments();
-    }, []);
+    }, [initialPayments, initialBilling]);
 
     // Helper to get date from payment object
     const getPaymentDate = (p) => {

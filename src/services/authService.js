@@ -361,6 +361,49 @@ export async function fetchCustomerProfile() {
 }
 
 /**
+ * Fetch B2B Dashboard Sync (Aggregated profile, bookings, payments, fleet)
+ */
+export async function getB2BDashboardSync() {
+  try {
+    const token = getAuthToken(); // Assuming getAuthToken can retrieve business token
+    if (!token) {
+      return { success: false, message: 'Not authenticated', status: 401 };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/b2b/dashboard-sync`, {
+      method: "GET",
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch dashboard data.',
+        status: response.status,
+      };
+    }
+    return {
+      success: true,
+      data: data,
+      message: data.message || 'Dashboard data fetched successfully',
+      status: response.status,
+    };
+  } catch (error) {
+    console.error("Error fetching B2B dashboard sync:", error);
+    return {
+      success: false,
+      message: "Network error. Failed to fetch dashboard data.",
+      error: error.message,
+    };
+  }
+}
+
+/**
  * Update authenticated customer profile
  */
 export async function updateCustomerProfile(payload) {

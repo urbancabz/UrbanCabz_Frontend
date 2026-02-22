@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import BusinessBookings from "../Components/Business/BusinessBookings";
 import BusinessProfile from "../Components/Business/BusinessProfile";
 import BusinessPayments from "../Components/Business/BusinessPayments";
-import { getCompanyProfile } from "../services/authService";
+import { getB2BDashboardSync } from "../services/authService";
 import {
     BuildingOfficeIcon,
     MapIcon,
@@ -20,13 +20,16 @@ export default function BusinessDashboard() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("bookings"); // "bookings" or "profile"
     const [company, setCompany] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function loadData() {
-            const result = await getCompanyProfile();
-            if (result.success) {
-                setCompany(result.data);
+            // Replaced parallel fetches in sub-components with a single synchronized API request
+            const result = await getB2BDashboardSync();
+            if (result.success && result.data) {
+                setCompany(result.data.company);
+                setDashboardData(result.data);
             }
             setLoading(false);
         }
@@ -152,8 +155,8 @@ export default function BusinessDashboard() {
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                         >
-                            {activeTab === "bookings" && <BusinessBookings company={company} />}
-                            {activeTab === "payments" && <BusinessPayments company={company} />}
+                            {activeTab === "bookings" && <BusinessBookings company={company} initialBookings={dashboardData?.bookings} />}
+                            {activeTab === "payments" && <BusinessPayments company={company} initialPayments={dashboardData?.payments} initialBilling={dashboardData?.billingSummary} />}
                             {activeTab === "profile" && <BusinessProfile company={company} />}
                         </motion.div>
                     </AnimatePresence>

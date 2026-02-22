@@ -15,21 +15,27 @@ import {
 } from "@heroicons/react/24/outline";
 
 
-export default function BusinessBookings({ company }) {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function BusinessBookings({ company, initialBookings = null }) {
+    const [bookings, setBookings] = useState(initialBookings || []);
+    const [loading, setLoading] = useState(!initialBookings && true);
     const [selectedMonth, setSelectedMonth] = useState("all");
 
     useEffect(() => {
-        async function fetchBookings() {
-            const result = await getCompanyBookings();
-            if (result.success) {
-                setBookings(result.data || []);
+        // Only fetch if initialBookings was naturally null (e.g. accessed directly somehow)
+        if (!initialBookings) {
+            async function fetchBookings() {
+                const result = await getCompanyBookings();
+                if (result.success) {
+                    setBookings(result.data || []);
+                }
+                setLoading(false);
             }
+            fetchBookings();
+        } else {
+            setBookings(initialBookings);
             setLoading(false);
         }
-        fetchBookings();
-    }, []);
+    }, [initialBookings]);
 
     // Generate month options from bookings data
     const monthOptions = useMemo(() => {
