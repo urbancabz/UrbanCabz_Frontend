@@ -75,9 +75,13 @@ export default function AdminDashboard() {
       await load();
       setLoading(false);
 
-      // Poll every 60 seconds, only when on booking-related tabs
+      // Poll every 60 seconds, only when on booking-related tabs AND tab is active
       if (needsPolling) {
-        intervalId = setInterval(load, 60000);
+        intervalId = setInterval(() => {
+          if (!document.hidden) {
+            load();
+          }
+        }, 60000);
       }
     })();
 
