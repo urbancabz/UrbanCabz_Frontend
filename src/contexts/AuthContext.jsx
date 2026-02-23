@@ -11,7 +11,7 @@ const AuthContext = createContext({
   loading: false,
   authReady: false,
   loginCustomer: async () => ({ success: false }),
-  logout: () => {},
+  logout: () => { },
   updateProfile: async () => ({ success: false }),
   refreshProfile: async () => ({ success: false }),
 });
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
   }, [persistProfile]);
 
   const refreshProfile = useCallback(async () => {
-    if (!localStorage.getItem("customerToken")) {
+    if (!localStorage.getItem("customerToken") && !localStorage.getItem("adminToken") && !localStorage.getItem("businessToken")) {
       persistProfile(null);
       return { success: false, message: "Not authenticated" };
     }

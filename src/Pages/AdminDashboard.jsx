@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -16,10 +16,11 @@ import DriverList from "../Components/Admin/DriverList";
 import PricingSettings from "../Components/Admin/PricingSettings";
 import CustomerManager from "../Components/Admin/CustomerManager";
 
-import { fetchAdminMe, fetchAdminDashboardSync } from "../services/adminService";
+import { fetchAdminDashboardSync } from "../services/adminService";
 
 export default function AdminDashboard() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const adminInfo = user || null;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,46 +29,35 @@ export default function AdminDashboard() {
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedB2BBooking, setSelectedB2BBooking] = useState(null);
-  const [adminInfo, setAdminInfo] = useState(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState("STATS");
 
-  const loadDashboardData = async () => {
+  const isFetching = useRef(false);
+  const hasFetched = useRef(false);
+
+  const loadDashboardData = async (force = false) => {
+    if (!force && (isFetching.current || hasFetched.current)) return;
+    isFetching.current = true;
     setLoading(true);
-    const syncRes = await fetchAdminDashboardSync();
-    if (syncRes.success) {
-      setDashboardData(syncRes.data);
+    try {
+      const syncRes = await fetchAdminDashboardSync();
+      if (syncRes.success) {
+        setDashboardData(syncRes.data);
+        hasFetched.current = true;
+      }
+    } finally {
+      isFetching.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
-      const me = await fetchAdminMe();
-      if (!me.success || cancelled) {
-        setLoading(false);
-        return;
-      }
-      setAdminInfo(me.data?.user || null);
-
-      const syncRes = await fetchAdminDashboardSync();
-      if (syncRes.success && !cancelled) {
-        setDashboardData(syncRes.data);
-      }
-      setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    loadDashboardData();
   }, []);
 
   const handleGlobalRefresh = async () => {
-    await loadDashboardData();
+    await loadDashboardData(true);
   };
 
   const handleViewChange = (view) => {
