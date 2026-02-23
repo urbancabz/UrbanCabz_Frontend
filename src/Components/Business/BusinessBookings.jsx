@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { getCompanyBookings } from "../../services/authService";
 import {
     CalendarDaysIcon,
     MapPinIcon,
@@ -17,23 +16,11 @@ import {
 
 export default function BusinessBookings({ company, initialBookings = null }) {
     const [bookings, setBookings] = useState(initialBookings || []);
-    const [loading, setLoading] = useState(!initialBookings && true);
     const [selectedMonth, setSelectedMonth] = useState("all");
 
     useEffect(() => {
-        // Only fetch if initialBookings was naturally null (e.g. accessed directly somehow)
-        if (!initialBookings) {
-            async function fetchBookings() {
-                const result = await getCompanyBookings();
-                if (result.success) {
-                    setBookings(result.data || []);
-                }
-                setLoading(false);
-            }
-            fetchBookings();
-        } else {
+        if (initialBookings) {
             setBookings(initialBookings);
-            setLoading(false);
         }
     }, [initialBookings]);
 
@@ -84,14 +71,6 @@ export default function BusinessBookings({ company, initialBookings = null }) {
         const date = new Date(year, parseInt(month) - 1);
         return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center p-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-yellow-400"></div>
-            </div>
-        );
-    }
 
     const getStatusColor = (status) => {
         switch (status) {

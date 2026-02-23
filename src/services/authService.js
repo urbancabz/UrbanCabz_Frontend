@@ -583,33 +583,6 @@ export async function getCompanyProfile() {
   }
 }
 
-export async function getCompanyBookings() {
-  try {
-    const token = localStorage.getItem('businessToken');
-    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('getCompanyBookings error:', error);
-    return { success: false, message: 'Network error fetching company bookings' };
-  }
-}
-
-export async function getCompanyPayments() {
-  try {
-    const token = localStorage.getItem('businessToken');
-    const response = await fetch(`${API_BASE_URL}/b2b/payments`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('getCompanyPayments error:', error);
-    return { success: false, message: 'Network error fetching company payments' };
-  }
-}
-
-// ... (existing functions)
 
 export async function bookBusinessRide(bookingData) {
   try {
