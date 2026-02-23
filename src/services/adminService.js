@@ -96,8 +96,41 @@ export async function fetchAdminBookings() {
     return {
       success: false,
       message: "Network error while loading bookings",
-      error: error.message,
     };
+  }
+}
+
+export async function fetchAdminDrivers() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/drivers`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, status: response.status, message: data.message || "Unable to load drivers" };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("fetchAdminDrivers error:", error);
+    return { success: false, message: "Network error", error: error.message };
+  }
+}
+
+export async function fetchAdminFleet() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/fleet`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, status: response.status, message: data.message || "Unable to load fleet" };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("fetchAdminFleet error:", error);
+    return { success: false, message: "Network error", error: error.message };
   }
 }
 

@@ -16,7 +16,14 @@ import DriverList from "../Components/Admin/DriverList";
 import PricingSettings from "../Components/Admin/PricingSettings";
 import CustomerManager from "../Components/Admin/CustomerManager";
 
-import { fetchAdminDashboardSync } from "../services/adminService";
+import {
+  fetchAdminDashboardSync,
+  fetchAdminBookings,
+  fetchB2BBookings,
+  fetchAdminDrivers,
+  fetchAdminFleet,
+  fetchUsers
+} from "../services/adminService";
 
 export default function AdminDashboard() {
   const { logout, user } = useAuth();
@@ -58,6 +65,31 @@ export default function AdminDashboard() {
 
   const handleGlobalRefresh = async () => {
     await loadDashboardData(true);
+  };
+
+  const refreshBookings = async () => {
+    const res = await fetchAdminBookings();
+    if (res.success) setDashboardData(prev => ({ ...prev, bookings: res.data?.data ?? res.data?.bookings ?? res.data }));
+  };
+
+  const refreshB2BBookings = async () => {
+    const res = await fetchB2BBookings();
+    if (res.success) setDashboardData(prev => ({ ...prev, b2bBookings: res.data?.data ?? res.data?.b2bBookings ?? res.data }));
+  };
+
+  const refreshDrivers = async () => {
+    const res = await fetchAdminDrivers();
+    if (res.success) setDashboardData(prev => ({ ...prev, drivers: res.data?.data ?? res.data?.drivers ?? res.data }));
+  };
+
+  const refreshFleet = async () => {
+    const res = await fetchAdminFleet();
+    if (res.success) setDashboardData(prev => ({ ...prev, fleet: res.data?.data ?? res.data?.fleet ?? res.data }));
+  };
+
+  const refreshUsers = async () => {
+    const res = await fetchUsers("", 1);
+    if (res.success) setDashboardData(prev => ({ ...prev, users: res.data?.data ?? res.data?.users ?? res.data }));
   };
 
   const handleViewChange = (view) => {
@@ -231,7 +263,7 @@ export default function AdminDashboard() {
                         <BookingDetailView
                           booking={selectedTicket}
                           onClose={() => setSelectedTicket(null)}
-                          onUpdate={handleGlobalRefresh}
+                          onUpdate={refreshBookings}
                         />
                       )}
                     </AnimatePresence>
@@ -250,7 +282,7 @@ export default function AdminDashboard() {
                         <B2BBookingDetailView
                           booking={selectedB2BBooking}
                           onClose={() => setSelectedB2BBooking(null)}
-                          onUpdate={handleGlobalRefresh}
+                          onUpdate={refreshB2BBookings}
                         />
                       )}
                     </AnimatePresence>
@@ -259,9 +291,9 @@ export default function AdminDashboard() {
 
                 {activeView === "B2B" && <B2BRequestsList requests={dashboardData?.b2bRequests || []} onUpdate={handleGlobalRefresh} />}
                 {activeView === "COMPANIES" && <CompanyList companies={dashboardData?.b2bCompanies || []} onUpdate={handleGlobalRefresh} />}
-                {activeView === "CUSTOMERS" && <CustomerManager users={dashboardData?.users || []} onUpdate={handleGlobalRefresh} />}
-                {activeView === "FLEET" && <FleetManager fleet={dashboardData?.fleet || []} onUpdate={handleGlobalRefresh} />}
-                {activeView === "DRIVERS" && <DriverList drivers={dashboardData?.drivers || []} onUpdate={handleGlobalRefresh} />}
+                {activeView === "CUSTOMERS" && <CustomerManager users={dashboardData?.users || []} onUpdate={refreshUsers} />}
+                {activeView === "FLEET" && <FleetManager fleet={dashboardData?.fleet || []} onUpdate={refreshFleet} />}
+                {activeView === "DRIVERS" && <DriverList drivers={dashboardData?.drivers || []} onUpdate={refreshDrivers} />}
                 {activeView === "PRICING" && <PricingSettings />}
 
                 {["HISTORY", "CANCELLED", "PENDING"].includes(activeView) && (
