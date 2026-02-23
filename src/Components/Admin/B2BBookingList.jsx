@@ -4,9 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function B2BBookingList({
     bookings = [],
     onSelect,
-    selectedId,
-    onRefresh,
-    loading = false
+    selectedId
 }) {
     const [activeTab, setActiveTab] = useState("READY");
     const [searchQuery, setSearchQuery] = useState("");
@@ -58,17 +56,6 @@ export default function B2BBookingList({
                         <p className="text-sm font-medium text-slate-500">B2B Partner Operations</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={onRefresh}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-600 font-bold rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50"
-                            title="Refresh B2B Bookings"
-                        >
-                            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Refresh
-                        </button>
                         <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
                             <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse"></div>
                             <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">B2B</span>

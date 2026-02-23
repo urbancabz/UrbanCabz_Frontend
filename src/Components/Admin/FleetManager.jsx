@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    fetchFleetVehicles,
     createFleetVehicle,
     updateFleetVehicle,
     deleteFleetVehicle,
@@ -10,11 +9,7 @@ import {
 
 const CATEGORIES = ["SEDAN", "SUV", "LUXURY", "TRAVELER"];
 
-let cachedVehicles = null;
-
-export default function FleetManager() {
-    const [vehicles, setVehicles] = useState(cachedVehicles ?? []);
-    const [loading, setLoading] = useState(!cachedVehicles);
+export default function FleetManager({ fleet = [], onUpdate }) {
     const [editingVehicle, setEditingVehicle] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -32,23 +27,6 @@ export default function FleetManager() {
         image_url: "",
         is_active: true,
     });
-
-    useEffect(() => {
-        if (!cachedVehicles) {
-            loadFleet();
-        }
-    }, []);
-
-    const loadFleet = async (force = false) => {
-        setLoading(true);
-        const res = await fetchFleetVehicles();
-        if (res.success) {
-            const fetchedVehicles = res.data?.vehicles ?? [];
-            cachedVehicles = fetchedVehicles;
-            setVehicles(fetchedVehicles);
-        }
-        setLoading(false);
-    };
 
     const resetForm = () => {
         setForm({
@@ -95,7 +73,7 @@ export default function FleetManager() {
 
         if (res.success) {
             setMessage(res.message || "Saved successfully!");
-            await loadFleet();
+            if (onUpdate) onUpdate();
             resetForm();
         } else {
             setMessage(res.message || "Failed to save");
@@ -108,7 +86,7 @@ export default function FleetManager() {
         const res = await deleteFleetVehicle(vehicle.id);
         if (res.success) {
             setMessage("Vehicle deactivated");
-            await loadFleet();
+            if (onUpdate) onUpdate();
         }
     };
 
@@ -123,23 +101,13 @@ export default function FleetManager() {
                             Manage vehicle models and pricing
                         </p>
                     </div>
-                    <button
-                        onClick={() => {
-                            cachedVehicles = null;
-                            loadFleet(true);
-                        }}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                    >
-                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Refresh
-                    </button>
                 </div>
                 <button
-                    onClick={() => setShowForm(true)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setShowForm(true);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
                 >
                     + Add Vehicle
                 </button>

@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    fetchDrivers,
     createDriver,
     updateDriver,
     deleteDriver,
 } from "../../services/driverService";
 
-let cachedDrivers = null;
-
-export default function DriverList() {
-    const [drivers, setDrivers] = useState(cachedDrivers ?? []);
-    const [loading, setLoading] = useState(!cachedDrivers);
+export default function DriverList({ drivers = [], onUpdate }) {
     const [editingDriver, setEditingDriver] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -23,23 +18,6 @@ export default function DriverList() {
         license_no: "",
         is_active: true,
     });
-
-    useEffect(() => {
-        if (!cachedDrivers) {
-            loadDrivers();
-        }
-    }, []);
-
-    const loadDrivers = async (force = false) => {
-        setLoading(true);
-        const res = await fetchDrivers();
-        if (res.success) {
-            const fetchedDrivers = res.data?.drivers ?? [];
-            cachedDrivers = fetchedDrivers;
-            setDrivers(fetchedDrivers);
-        }
-        setLoading(false);
-    };
 
     const resetForm = () => {
         setForm({
@@ -77,7 +55,7 @@ export default function DriverList() {
 
         if (res.success) {
             setMessage(res.message || "Saved successfully!");
-            await loadDrivers();
+            if (onUpdate) onUpdate();
             resetForm();
         } else {
             setMessage(res.message || "Failed to save");
@@ -90,7 +68,7 @@ export default function DriverList() {
         const res = await deleteDriver(driver.id);
         if (res.success) {
             setMessage("Driver deactivated");
-            await loadDrivers();
+            if (onUpdate) onUpdate();
         }
     };
 
@@ -105,22 +83,12 @@ export default function DriverList() {
                             Manage authorized drivers and their contact info
                         </p>
                     </div>
-                    <button
-                        onClick={() => {
-                            cachedDrivers = null;
-                            loadDrivers(true);
-                        }}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                    >
-                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Refresh
-                    </button>
                 </div>
                 <button
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                        resetForm();
+                        setShowForm(true);
+                    }}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all"
                 >
                     + Register Driver
@@ -233,16 +201,12 @@ export default function DriverList() {
             </AnimatePresence>
 
             {/* Driver List */}
-            {loading ? (
-                <div className="flex items-center justify-center py-12 text-slate-400">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-500" />
-                </div>
-            ) : drivers.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 bg-white border border-dashed border-slate-300 rounded-xl">
-                    No drivers registered yet. Start by adding one.
+            {drivers.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                    <p className="text-slate-500">No active drivers found.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {drivers.map((driver) => (
                         <motion.div
                             key={driver.id}

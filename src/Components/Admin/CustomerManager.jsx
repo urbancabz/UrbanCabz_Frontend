@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchUsers, updateUser } from '../../services/adminService';
+import { updateUser } from '../../services/adminService';
 import { toast } from 'react-hot-toast';
 
 import CustomerHistory from './CustomerHistory';
 
-let cachedUsers = null;
-let cachedPagination = null;
-
-export default function CustomerManager() {
-    const [users, setUsers] = useState(cachedUsers ?? []);
-    const [loading, setLoading] = useState(true);
+export default function CustomerManager({ users = [], onUpdate }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
+
+    // We only have 100 users max from the sync, so client-side pagination is fine if needed
+    const itemsPerPage = 10;
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -21,34 +18,6 @@ export default function CustomerManager() {
 
     // History View State
     const [historyUser, setHistoryUser] = useState(null);
-
-    useEffect(() => {
-        if (page === 1 && searchTerm === '' && cachedUsers) {
-            setUsers(cachedUsers);
-            setPagination(cachedPagination);
-            setLoading(false);
-        } else {
-            loadUsers();
-        }
-    }, [page, searchTerm]);
-
-    const loadUsers = async (force = false) => {
-        setLoading(true);
-        // Debounce search could be added here, but for now direct call
-        const res = await fetchUsers(searchTerm, page);
-        if (res.success) {
-            const fetchedUsers = res.data?.users ?? [];
-            setUsers(fetchedUsers);
-            setPagination(res.data?.pagination || null);
-
-            // Cache the default view (page 1, no search) to prevent refetching on tab switch
-            if (page === 1 && searchTerm === '') {
-                cachedUsers = fetchedUsers;
-                cachedPagination = res.data?.pagination || null;
-            }
-        }
-        setLoading(false);
-    };
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -74,7 +43,7 @@ export default function CustomerManager() {
         if (res.success) {
             toast.success("User updated successfully");
             setSelectedUser(null);
-            loadUsers();
+            if (onUpdate) onUpdate();
         } else {
             toast.error(res.message || "Failed to update user");
         }
@@ -88,25 +57,6 @@ export default function CustomerManager() {
                         <h2 className="text-2xl font-black text-slate-900">Customer Management</h2>
                         <p className="text-slate-500 text-sm font-medium">View and manage B2C registered users</p>
                     </div>
-                    <button
-                        onClick={() => {
-                            if (page === 1 && searchTerm === '') {
-                                cachedUsers = null;
-                                cachedPagination = null;
-                                loadUsers(true);
-                            } else {
-                                setPage(1);
-                                setSearchTerm('');
-                            }
-                        }}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                    >
-                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Refresh
-                    </button>
                 </div>
                 <input
                     type="text"
