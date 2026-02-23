@@ -10,9 +10,11 @@ import {
 
 const CATEGORIES = ["SEDAN", "SUV", "LUXURY", "TRAVELER"];
 
+let cachedVehicles = null;
+
 export default function FleetManager() {
-    const [vehicles, setVehicles] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [vehicles, setVehicles] = useState(cachedVehicles ?? []);
+    const [loading, setLoading] = useState(!cachedVehicles);
     const [editingVehicle, setEditingVehicle] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -32,14 +34,18 @@ export default function FleetManager() {
     });
 
     useEffect(() => {
-        loadFleet();
+        if (!cachedVehicles) {
+            loadFleet();
+        }
     }, []);
 
-    const loadFleet = async () => {
+    const loadFleet = async (force = false) => {
         setLoading(true);
         const res = await fetchFleetVehicles();
         if (res.success) {
-            setVehicles(res.data.vehicles || []);
+            const fetchedVehicles = res.data?.vehicles ?? [];
+            cachedVehicles = fetchedVehicles;
+            setVehicles(fetchedVehicles);
         }
         setLoading(false);
     };
@@ -110,11 +116,26 @@ export default function FleetManager() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Fleet Manager</h2>
-                    <p className="text-sm text-slate-500">
-                        Manage vehicle models and pricing
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Fleet Manager</h2>
+                        <p className="text-sm text-slate-500">
+                            Manage vehicle models and pricing
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            cachedVehicles = null;
+                            loadFleet(true);
+                        }}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                    >
+                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
                 </div>
                 <button
                     onClick={() => setShowForm(true)}

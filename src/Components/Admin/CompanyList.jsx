@@ -6,9 +6,11 @@ import { toast } from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
+let cachedCompanies = null;
+
 export default function CompanyList() {
-    const [companies, setCompanies] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [companies, setCompanies] = useState(cachedCompanies ?? []);
+    const [loading, setLoading] = useState(!cachedCompanies);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -25,10 +27,13 @@ export default function CompanyList() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetchCompanies();
+        if (!cachedCompanies) {
+            fetchCompanies();
+        }
     }, []);
 
-    const fetchCompanies = async () => {
+    const fetchCompanies = async (force = false) => {
+        setLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
             const response = await fetch(`${API_BASE_URL}/b2b/companies`, {
@@ -36,7 +41,9 @@ export default function CompanyList() {
             });
             const data = await response.json();
             if (data.success) {
-                setCompanies(data.data);
+                const fetchedCompanies = data?.data ?? [];
+                cachedCompanies = fetchedCompanies;
+                setCompanies(fetchedCompanies);
             }
         } catch (error) {
             console.error('Error fetching companies:', error);
@@ -72,9 +79,24 @@ export default function CompanyList() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900">Partner Companies</h2>
-                    <p className="text-slate-500 text-sm font-medium">Manage B2B accounts, bookings, and billing</p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900">Partner Companies</h2>
+                        <p className="text-slate-500 text-sm font-medium">Manage B2B accounts, bookings, and billing</p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            cachedCompanies = null;
+                            fetchCompanies(true);
+                        }}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                    >
+                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
                     <input

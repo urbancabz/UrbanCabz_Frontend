@@ -7,9 +7,11 @@ import {
     deleteDriver,
 } from "../../services/driverService";
 
+let cachedDrivers = null;
+
 export default function DriverList() {
-    const [drivers, setDrivers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [drivers, setDrivers] = useState(cachedDrivers ?? []);
+    const [loading, setLoading] = useState(!cachedDrivers);
     const [editingDriver, setEditingDriver] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -23,14 +25,18 @@ export default function DriverList() {
     });
 
     useEffect(() => {
-        loadDrivers();
+        if (!cachedDrivers) {
+            loadDrivers();
+        }
     }, []);
 
-    const loadDrivers = async () => {
+    const loadDrivers = async (force = false) => {
         setLoading(true);
         const res = await fetchDrivers();
         if (res.success) {
-            setDrivers(res.data.drivers || []);
+            const fetchedDrivers = res.data?.drivers ?? [];
+            cachedDrivers = fetchedDrivers;
+            setDrivers(fetchedDrivers);
         }
         setLoading(false);
     };
@@ -92,11 +98,26 @@ export default function DriverList() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Driver Registry</h2>
-                    <p className="text-sm text-slate-500">
-                        Manage authorized drivers and their contact info
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Driver Registry</h2>
+                        <p className="text-sm text-slate-500">
+                            Manage authorized drivers and their contact info
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            cachedDrivers = null;
+                            loadDrivers(true);
+                        }}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                    >
+                        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
                 </div>
                 <button
                     onClick={() => setShowForm(true)}
