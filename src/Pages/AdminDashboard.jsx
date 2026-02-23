@@ -67,29 +67,68 @@ export default function AdminDashboard() {
     await loadDashboardData(true);
   };
 
+  // /admin/bookings → { bookings: [...] }
   const refreshBookings = async () => {
     const res = await fetchAdminBookings();
-    if (res.success) setDashboardData(prev => ({ ...prev, bookings: res.data?.data ?? res.data?.bookings ?? res.data }));
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.bookings) ? res.data.bookings
+            : [];
+      setDashboardData(prev => ({ ...prev, bookings: arr }));
+    }
   };
 
+  // /b2b/... → varies; fall through to global refresh for correctness
   const refreshB2BBookings = async () => {
     const res = await fetchB2BBookings();
-    if (res.success) setDashboardData(prev => ({ ...prev, b2bBookings: res.data?.data ?? res.data?.b2bBookings ?? res.data }));
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.bookings) ? res.data.bookings
+            : [];
+      setDashboardData(prev => ({ ...prev, b2bBookings: arr }));
+    }
   };
 
+  // /admin/drivers → { success, data: { drivers: [...] } }
   const refreshDrivers = async () => {
     const res = await fetchAdminDrivers();
-    if (res.success) setDashboardData(prev => ({ ...prev, drivers: res.data?.data ?? res.data?.drivers ?? res.data }));
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.drivers) ? res.data.drivers
+            : Array.isArray(res.data?.data?.drivers) ? res.data.data.drivers
+              : [];
+      setDashboardData(prev => ({ ...prev, drivers: arr }));
+    }
   };
 
+  // /admin/fleet → { success, data: { vehicles: [...] } }
   const refreshFleet = async () => {
     const res = await fetchAdminFleet();
-    if (res.success) setDashboardData(prev => ({ ...prev, fleet: res.data?.data ?? res.data?.fleet ?? res.data }));
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.vehicles) ? res.data.vehicles
+            : Array.isArray(res.data?.fleet) ? res.data.fleet
+              : Array.isArray(res.data?.data?.vehicles) ? res.data.data.vehicles
+                : [];
+      setDashboardData(prev => ({ ...prev, fleet: arr }));
+    }
   };
 
+  // /admin/users → varies
   const refreshUsers = async () => {
     const res = await fetchUsers("", 1);
-    if (res.success) setDashboardData(prev => ({ ...prev, users: res.data?.data ?? res.data?.users ?? res.data }));
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.users) ? res.data.users
+            : Array.isArray(res.data?.data?.users) ? res.data.data.users
+              : [];
+      setDashboardData(prev => ({ ...prev, users: arr }));
+    }
   };
 
   const handleViewChange = (view) => {
