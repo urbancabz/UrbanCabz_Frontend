@@ -28,8 +28,15 @@ export default function BusinessDashboard() {
             // Replaced parallel fetches in sub-components with a single synchronized API request
             const result = await getB2BDashboardSync();
             if (result.success && result.data) {
-                setCompany(result.data.company);
-                setDashboardData(result.data);
+                // The API actually returns { success: true, data: { company, bookings, payments, ... } }
+                // but our fetch wrapper might wrap it again, or the backend directly nests it.
+                // Looking at getB2BDashboardSync: it returns { success, data: response.json() }
+                // And response.json() is { success: true, data: { company, ... } }
+                // So the actual payload is inside result.data.data
+                const payload = result.data.data || result.data;
+
+                setCompany(payload.company);
+                setDashboardData(payload);
             }
             setLoading(false);
         }
