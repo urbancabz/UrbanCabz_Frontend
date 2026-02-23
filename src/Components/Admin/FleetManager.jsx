@@ -291,17 +291,13 @@ export default function FleetManager({ fleet = [], onUpdate }) {
             </AnimatePresence>
 
             {/* Vehicle List */}
-            {loading ? (
-                <div className="flex items-center justify-center py-12 text-slate-400">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-500" />
-                </div>
-            ) : vehicles.length === 0 ? (
+            {fleet.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                     No vehicles in fleet. Add your first vehicle above.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {vehicles.filter(v => v.is_active).map((vehicle) => (
+                    {fleet.filter(v => v.is_active).map((vehicle) => (
                         <motion.div
                             key={vehicle.id}
                             layout

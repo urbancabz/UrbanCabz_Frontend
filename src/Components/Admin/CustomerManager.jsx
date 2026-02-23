@@ -130,7 +130,7 @@ export default function CustomerManager({ users = [], onUpdate }) {
                                     </td>
                                 </tr>
                             ))}
-                            {!loading && users.length === 0 && (
+                            {users.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="py-12 text-center text-slate-400 font-bold">No users found</td>
                                 </tr>
@@ -140,23 +140,23 @@ export default function CustomerManager({ users = [], onUpdate }) {
                 </div>
 
                 {/* Pagination */}
-                {pagination && pagination.pages > 1 && (
+                {users.length > itemsPerPage && (
                     <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
                         <p className="text-xs text-slate-500 font-medium">
-                            Showing {((page - 1) * pagination.limit) + 1} to {Math.min(page * pagination.limit, pagination.total)} of {pagination.total} users
+                            Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, users.length)} of {users.length} users
                         </p>
                         <div className="flex gap-2">
                             <button
                                 disabled={page === 1}
-                                onClick={() => setPage(p => p - 1)}
-                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Previous
                             </button>
                             <button
-                                disabled={page === pagination.pages}
+                                disabled={page >= Math.ceil(users.length / itemsPerPage)}
                                 onClick={() => setPage(p => p + 1)}
-                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Next
                             </button>
