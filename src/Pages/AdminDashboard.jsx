@@ -73,10 +73,10 @@ export default function AdminDashboard() {
           fetchB2BBookings(),
         ]);
         if (result.success && !cancelled) {
-          setTickets(result.data.bookings || []);
+          setTickets(result?.data?.bookings ?? []);
         }
         if (b2bRes.success && !cancelled) {
-          setB2BBookings(b2bRes.data.bookings || []);
+          setB2BBookings(b2bRes?.data?.bookings ?? []);
         }
       }
     };
@@ -111,17 +111,23 @@ export default function AdminDashboard() {
 
   const summary = useMemo(() => {
     // We blend real-time ticket arrays with the dashboard stats
-    const total = dashboardStats.totalBookings;
-    const paidCount = tickets.filter(b => b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))).length;
-    const pendingPayment = tickets.filter(b => b.status === "PENDING_PAYMENT" && !b.payments?.some(p => p.status === 'SUCCESS')).length;
-    const assigned = tickets.filter(b => (b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))) && b.taxi_assign_status === "ASSIGNED").length;
-    const readyToAssign = paidCount - assigned;
+    // Graceful fallback arrays using optional chaining and nullish coalescing
+    const safeTickets = tickets ?? [];
+    const stats = dashboardStats || {};
+
+    // Safely calculate counts with fallbacks
+    const total = stats.totalBookings || 0;
+    const paidCount = safeTickets.filter(b => b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))).length;
+    const pendingPayment = safeTickets.filter(b => b.status === "PENDING_PAYMENT" && !b.payments?.some(p => p.status === 'SUCCESS')).length;
+    const assigned = safeTickets.filter(b => (b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))) && b.taxi_assign_status === "ASSIGNED").length;
+    const readyToAssign = Math.max(0, paidCount - assigned);
+
     return {
       total,
       assigned,
       readyToAssign,
-      pendingPayment: dashboardStats.pendingBookings,
-      paidCount: dashboardStats.completedBookings
+      pendingPayment: stats.pendingBookings || 0,
+      paidCount: stats.completedBookings || 0
     };
   }, [tickets, dashboardStats]);
 
@@ -133,7 +139,9 @@ export default function AdminDashboard() {
     else if (view === "CANCELLED") result = await fetchCancelledBookings();
     else if (view === "PENDING") result = await fetchPendingPayments();
 
-    if (result?.success) setHistoryData(result.data.bookings || []);
+    if (result?.success) setHistoryData(result?.data?.bookings ?? []);
+    else console.error(`Failed to load ${view} data`, result?.message);
+
     setHistoryLoading(false);
   };
 
@@ -238,7 +246,7 @@ export default function AdminDashboard() {
             <div className="p-4 border-t border-slate-800 bg-slate-900/50">
               <div className="flex items-center gap-3 mb-4 px-2">
                 <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white border border-indigo-400/20">
-                  {adminInfo.email[0].toUpperCase()}
+                  {adminInfo?.email?.[0]?.toUpperCase() || '?'}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Active User</span>
@@ -319,8 +327,9 @@ export default function AdminDashboard() {
                         onUpdate={async () => {
                           const res = await fetchB2BBookings();
                           if (res.success) {
-                            setB2BBookings(res.data.bookings || []);
-                            const current = res.data.bookings.find(b => b.id === selectedB2BBooking.id);
+                            const newBookings = res?.data?.bookings ?? [];
+                            setB2BBookings(newBookings);
+                            const current = newBookings.find(b => b.id === selectedB2BBooking.id);
                             if (current) setSelectedB2BBooking(current);
                           }
                         }}
