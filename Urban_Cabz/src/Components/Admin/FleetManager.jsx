@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    fetchFleetVehicles,
     createFleetVehicle,
     updateFleetVehicle,
     deleteFleetVehicle,
@@ -10,9 +9,7 @@ import {
 
 const CATEGORIES = ["SEDAN", "SUV", "LUXURY", "TRAVELER"];
 
-export default function FleetManager() {
-    const [vehicles, setVehicles] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function FleetManager({ fleet = [], onUpdate }) {
     const [editingVehicle, setEditingVehicle] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -30,19 +27,6 @@ export default function FleetManager() {
         image_url: "",
         is_active: true,
     });
-
-    useEffect(() => {
-        loadFleet();
-    }, []);
-
-    const loadFleet = async () => {
-        setLoading(true);
-        const res = await fetchFleetVehicles();
-        if (res.success) {
-            setVehicles(res.data.vehicles || []);
-        }
-        setLoading(false);
-    };
 
     const resetForm = () => {
         setForm({
@@ -89,7 +73,7 @@ export default function FleetManager() {
 
         if (res.success) {
             setMessage(res.message || "Saved successfully!");
-            await loadFleet();
+            if (onUpdate) onUpdate();
             resetForm();
         } else {
             setMessage(res.message || "Failed to save");
@@ -102,7 +86,7 @@ export default function FleetManager() {
         const res = await deleteFleetVehicle(vehicle.id);
         if (res.success) {
             setMessage("Vehicle deactivated");
-            await loadFleet();
+            if (onUpdate) onUpdate();
         }
     };
 
@@ -110,15 +94,20 @@ export default function FleetManager() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Fleet Manager</h2>
-                    <p className="text-sm text-slate-500">
-                        Manage vehicle models and pricing
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Fleet Manager</h2>
+                        <p className="text-sm text-slate-500">
+                            Manage vehicle models and pricing
+                        </p>
+                    </div>
                 </div>
                 <button
-                    onClick={() => setShowForm(true)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setShowForm(true);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20"
                 >
                     + Add Vehicle
                 </button>
@@ -277,14 +266,16 @@ export default function FleetManager() {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="submit"
-                                    disabled={saving}
+                                    disabled={saving || uploading}
                                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
                                 >
                                     {saving
                                         ? "Saving..."
-                                        : editingVehicle
-                                            ? "Update Vehicle"
-                                            : "Add Vehicle"}
+                                        : uploading
+                                            ? "Uploading Image..."
+                                            : editingVehicle
+                                                ? "Update Vehicle"
+                                                : "Add Vehicle"}
                                 </button>
                                 <button
                                     type="button"
@@ -300,17 +291,13 @@ export default function FleetManager() {
             </AnimatePresence>
 
             {/* Vehicle List */}
-            {loading ? (
-                <div className="flex items-center justify-center py-12 text-slate-400">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-500" />
-                </div>
-            ) : vehicles.length === 0 ? (
+            {fleet.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                     No vehicles in fleet. Add your first vehicle above.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {vehicles.filter(v => v.is_active).map((vehicle) => (
+                    {fleet.filter(v => v.is_active).map((vehicle) => (
                         <motion.div
                             key={vehicle.id}
                             layout

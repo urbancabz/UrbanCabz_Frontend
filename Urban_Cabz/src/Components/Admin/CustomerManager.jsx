@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchUsers, updateUser } from '../../services/adminService';
+import { updateUser } from '../../services/adminService';
 import { toast } from 'react-hot-toast';
 
 import CustomerHistory from './CustomerHistory';
 
-export default function CustomerManager() {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function CustomerManager({ users = [], onUpdate }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
+
+    // We only have 100 users max from the sync, so client-side pagination is fine if needed
+    const itemsPerPage = 10;
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -18,21 +18,6 @@ export default function CustomerManager() {
 
     // History View State
     const [historyUser, setHistoryUser] = useState(null);
-
-    useEffect(() => {
-        loadUsers();
-    }, [page, searchTerm]);
-
-    const loadUsers = async () => {
-        setLoading(true);
-        // Debounce search could be added here, but for now direct call
-        const res = await fetchUsers(searchTerm, page);
-        if (res.success) {
-            setUsers(res.data?.users || []);
-            setPagination(res.data?.pagination || null);
-        }
-        setLoading(false);
-    };
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -58,7 +43,7 @@ export default function CustomerManager() {
         if (res.success) {
             toast.success("User updated successfully");
             setSelectedUser(null);
-            loadUsers();
+            if (onUpdate) onUpdate();
         } else {
             toast.error(res.message || "Failed to update user");
         }
@@ -67,9 +52,11 @@ export default function CustomerManager() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900">Customer Management</h2>
-                    <p className="text-slate-500 text-sm font-medium">View and manage B2C registered users</p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900">Customer Management</h2>
+                        <p className="text-slate-500 text-sm font-medium">View and manage B2C registered users</p>
+                    </div>
                 </div>
                 <input
                     type="text"
@@ -143,7 +130,7 @@ export default function CustomerManager() {
                                     </td>
                                 </tr>
                             ))}
-                            {!loading && users.length === 0 && (
+                            {users.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="py-12 text-center text-slate-400 font-bold">No users found</td>
                                 </tr>
@@ -153,23 +140,23 @@ export default function CustomerManager() {
                 </div>
 
                 {/* Pagination */}
-                {pagination && pagination.pages > 1 && (
+                {users.length > itemsPerPage && (
                     <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
                         <p className="text-xs text-slate-500 font-medium">
-                            Showing {((page - 1) * pagination.limit) + 1} to {Math.min(page * pagination.limit, pagination.total)} of {pagination.total} users
+                            Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, users.length)} of {users.length} users
                         </p>
                         <div className="flex gap-2">
                             <button
                                 disabled={page === 1}
-                                onClick={() => setPage(p => p - 1)}
-                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Previous
                             </button>
                             <button
-                                disabled={page === pagination.pages}
+                                disabled={page >= Math.ceil(users.length / itemsPerPage)}
                                 onClick={() => setPage(p => p + 1)}
-                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Next
                             </button>

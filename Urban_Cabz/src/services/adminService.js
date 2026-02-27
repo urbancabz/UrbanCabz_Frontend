@@ -32,32 +32,45 @@ function buildAuthHeaders() {
   return headers;
 }
 
-export async function fetchAdminMe() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/admin/me`, {
-      method: "GET",
-      headers: buildAuthHeaders(),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
+// Cache fetchAdminMe to prevent 3+ duplicate calls per page load
+// Store the promise instead of just the result to handle concurrent calls
+let _adminMePromise = null;
+let _adminMeCacheTime = 0;
+const ADMIN_ME_CACHE_TTL = 60 * 1000; // 60 seconds
+
+export function fetchAdminMe() {
+  const now = Date.now();
+  if (_adminMePromise && (now - _adminMeCacheTime) < ADMIN_ME_CACHE_TTL) {
+    return _adminMePromise;
+  }
+
+  _adminMePromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/me`, {
+        method: "GET",
+        headers: buildAuthHeaders(),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          success: false,
+          status: response.status,
+          message: data.message || "Unable to fetch admin profile",
+        };
+      }
+      _adminMeCacheTime = Date.now();
+      return { success: true, data };
+    } catch (error) {
+      console.error("fetchAdminMe error:", error);
       return {
         success: false,
-        status: response.status,
-        message: data.message || "Unable to fetch admin profile",
+        message: "Network error while fetching admin profile: " + error.message,
+        error: error.message,
       };
     }
-    return {
-      success: true,
-      data,
-    };
-  } catch (error) {
-    console.error("fetchAdminMe error:", error);
-    return {
-      success: false,
-      message: "Network error while fetching admin profile: " + error.message,
-      error: error.message,
-    };
-  }
+  })();
+
+  return _adminMePromise;
 }
 
 export async function fetchAdminBookings() {
@@ -83,6 +96,67 @@ export async function fetchAdminBookings() {
     return {
       success: false,
       message: "Network error while loading bookings",
+    };
+  }
+}
+
+export async function fetchAdminDrivers() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/drivers`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, status: response.status, message: data.message || "Unable to load drivers" };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("fetchAdminDrivers error:", error);
+    return { success: false, message: "Network error", error: error.message };
+  }
+}
+
+export async function fetchAdminFleet() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/fleet`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, status: response.status, message: data.message || "Unable to load fleet" };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("fetchAdminFleet error:", error);
+    return { success: false, message: "Network error", error: error.message };
+  }
+}
+
+export async function fetchAdminDashboardSync() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/dashboard-sync`, {
+      method: "GET",
+      headers: buildAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        success: false,
+        status: response.status,
+        message: data.message || "Unable to load dashboard sync data",
+      };
+    }
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("fetchAdminDashboardSync error:", error);
+    return {
+      success: false,
+      message: "Network error while loading dashboard sync data",
       error: error.message,
     };
   }
@@ -120,13 +194,21 @@ export async function fetchAdminBookingTicket(bookingId) {
 }
 
 export async function upsertTaxiAssignment(bookingId, payload) {
+  // Map frontend fields to backend expected fields
+  const backendPayload = {
+    driverName: payload.driverName,
+    driverNumber: payload.driverPhone || payload.driverNumber, // Map phone to number
+    cabNumber: payload.carNumber || payload.cabNumber,        // Map car to cab
+    cabName: payload.carModel || payload.cabName              // Map model to name
+  };
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/admin/bookings/${bookingId}/assign-taxi`,
       {
         method: "POST",
         headers: buildAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(backendPayload),
       }
     );
     const data = await response.json().catch(() => ({}));

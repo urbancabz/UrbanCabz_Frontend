@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import useDragScroll from '../../hooks/useDragScroll';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
-export default function B2BRequestsList() {
+export default function B2BRequestsList({ requests = [], onUpdate }) {
     const { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, onContextMenu, isDragging } = useDragScroll();
 
-    const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('ALL'); // ALL, PENDING, APPROVED, REJECTED
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -19,34 +17,6 @@ export default function B2BRequestsList() {
         state: '',
         pincode: ''
     });
-
-    useEffect(() => {
-        fetchRequests();
-    }, [filter]);
-
-    const fetchRequests = async () => {
-        try {
-            const token = localStorage.getItem('adminToken');
-            const url = filter === 'ALL'
-                ? `${API_BASE_URL}/b2b/requests`
-                : `${API_BASE_URL}/b2b/requests?status=${filter}`;
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                setRequests(data.data);
-            }
-        } catch (error) {
-            console.error('Error fetching B2B requests:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleApprove = (request) => {
         setSelectedRequest(request);
@@ -84,7 +54,7 @@ export default function B2BRequestsList() {
                 setShowApproveModal(false);
                 setSelectedRequest(null);
                 setApproveDetails({ address: '', city: '', state: '', pincode: '' });
-                fetchRequests();
+                if (onUpdate) onUpdate();
             } else {
                 alert('Failed to approve request: ' + data.message);
             }
@@ -114,7 +84,7 @@ export default function B2BRequestsList() {
             const data = await response.json();
             if (data.success) {
                 alert('B2B request rejected');
-                fetchRequests();
+                if (onUpdate) onUpdate();
             } else {
                 alert('Failed to reject request: ' + data.message);
             }
@@ -144,20 +114,14 @@ export default function B2BRequestsList() {
         return matchesFilter && matchesSearch;
     });
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-neutral-400">Loading B2B requests...</div>
-            </div>
-        );
-    }
-
     return (
         <div className="p-6">
             {/* Header */}
-            <div className="mb-6">
-                <h2 className="text-2xl font-black text-slate-900 mb-2">B2B Registration Requests</h2>
-                <p className="text-slate-500 font-medium">Manage company registration requests</p>
+            <div className="mb-6 flex justify-between items-start">
+                <div>
+                    <h2 className="text-2xl font-black text-slate-900 mb-2">B2B Registration Requests</h2>
+                    <p className="text-slate-500 font-medium">Manage company registration requests</p>
+                </div>
             </div>
 
             {/* Filters */}

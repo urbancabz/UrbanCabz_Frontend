@@ -55,9 +55,11 @@ export default function B2BBookingList({
                         <h2 className="text-xl font-black text-slate-900 tracking-tight">Corporate Dispatch</h2>
                         <p className="text-sm font-medium text-slate-500">B2B Partner Operations</p>
                     </div>
-                    <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
-                        <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse"></div>
-                        <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">B2B</span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
+                            <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse"></div>
+                            <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">B2B</span>
+                        </div>
                     </div>
                 </div>
 
@@ -178,8 +180,8 @@ function B2BBookingCard({ booking, isSelected, onClick }) {
                     <span className="text-xs font-semibold text-slate-400">{booking.distance_km} km</span>
                 </div>
                 <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${isAssigned
-                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-100 text-amber-700 border border-amber-200"
+                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    : "bg-amber-100 text-amber-700 border border-amber-200"
                     }`}>
                     {isAssigned ? "Active" : "Pending"}
                 </span>

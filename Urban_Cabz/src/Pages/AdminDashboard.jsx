@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,87 +17,123 @@ import PricingSettings from "../Components/Admin/PricingSettings";
 import CustomerManager from "../Components/Admin/CustomerManager";
 
 import {
+  fetchAdminDashboardSync,
   fetchAdminBookings,
-  fetchAdminBookingTicket,
-  fetchAdminMe,
-  fetchCompletedBookings,
-  fetchCancelledBookings,
-  fetchPendingPayments,
   fetchB2BBookings,
+  fetchAdminDrivers,
+  fetchAdminFleet,
+  fetchUsers
 } from "../services/adminService";
 
 export default function AdminDashboard() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const adminInfo = user || null;
   const navigate = useNavigate();
   const location = useLocation();
+
   const [loading, setLoading] = useState(false);
-  const [tickets, setTickets] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [b2bBookings, setB2BBookings] = useState([]);
   const [selectedB2BBooking, setSelectedB2BBooking] = useState(null);
-  const [adminInfo, setAdminInfo] = useState(null);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState("STATS");
 
-  const [historyData, setHistoryData] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const isFetching = useRef(false);
+  const hasFetched = useRef(false);
+
+  const loadDashboardData = async (force = false) => {
+    if (!force && (isFetching.current || hasFetched.current)) return;
+    isFetching.current = true;
+    setLoading(true);
+    try {
+      const syncRes = await fetchAdminDashboardSync();
+      if (syncRes.success) {
+        setDashboardData(syncRes.data);
+        hasFetched.current = true;
+      }
+    } finally {
+      isFetching.current = false;
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      const result = await fetchAdminBookings();
-      if (result.success && !cancelled) {
-        setTickets(result.data.bookings || []);
-      }
-
-      const b2bRes = await fetchB2BBookings();
-      if (b2bRes.success && !cancelled) {
-        setB2BBookings(b2bRes.data.bookings || []);
-      }
-    };
-
-    (async () => {
-      setLoading(true);
-      const me = await fetchAdminMe();
-      if (!me.success) {
-        setLoading(false);
-        return;
-      }
-      setAdminInfo(me.data?.user || null);
-
-      await load();
-      setLoading(false);
-
-      const intervalId = setInterval(load, 10000);
-      return () => {
-        cancelled = true;
-        clearInterval(intervalId);
-      };
-    })();
-
-    return () => { cancelled = true; };
+    loadDashboardData();
   }, []);
 
-  const summary = useMemo(() => {
-    const total = tickets.length;
-    const paidCount = tickets.filter(b => b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))).length;
-    const pendingPayment = tickets.filter(b => b.status === "PENDING_PAYMENT" && !b.payments?.some(p => p.status === 'SUCCESS')).length;
-    const assigned = tickets.filter(b => (b.status === "PAID" || (b.status === "PENDING_PAYMENT" && b.payments?.some(p => p.status === 'SUCCESS'))) && b.taxi_assign_status === "ASSIGNED").length;
-    const readyToAssign = paidCount - assigned;
-    return { total, assigned, readyToAssign, pendingPayment, paidCount };
-  }, [tickets]);
+  const handleGlobalRefresh = async () => {
+    await loadDashboardData(true);
+  };
 
-  const loadHistoryData = async (view) => {
-    setHistoryLoading(true);
-    setHistoryData([]);
-    let result;
-    if (view === "HISTORY") result = await fetchCompletedBookings();
-    else if (view === "CANCELLED") result = await fetchCancelledBookings();
-    else if (view === "PENDING") result = await fetchPendingPayments();
+  // /admin/bookings → { bookings: [...] }
+  const refreshBookings = async () => {
+    const res = await fetchAdminBookings();
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.bookings) ? res.data.bookings
+            : [];
+      setDashboardData(prev => ({ ...prev, bookings: arr }));
+    }
+  };
 
-    if (result?.success) setHistoryData(result.data.bookings || []);
-    setHistoryLoading(false);
+  // /b2b/... → varies; fall through to global refresh for correctness
+  const refreshB2BBookings = async () => {
+    const res = await fetchB2BBookings();
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.bookings) ? res.data.bookings
+            : [];
+      setDashboardData(prev => ({ ...prev, b2bBookings: arr }));
+    }
+  };
+
+  // /admin/drivers → { success, data: { drivers: [...] } }
+  const refreshDrivers = async () => {
+    const res = await fetchAdminDrivers();
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.drivers) ? res.data.drivers
+            : Array.isArray(res.data?.data?.drivers) ? res.data.data.drivers
+              : [];
+      setDashboardData(prev => ({ ...prev, drivers: arr }));
+    }
+  };
+
+  // /admin/fleet → { success, data: { vehicles: [...] } }
+  const refreshFleet = async () => {
+    const res = await fetchAdminFleet();
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.vehicles) ? res.data.vehicles
+            : Array.isArray(res.data?.fleet) ? res.data.fleet
+              : Array.isArray(res.data?.data?.vehicles) ? res.data.data.vehicles
+                : [];
+      setDashboardData(prev => ({ ...prev, fleet: arr }));
+    }
+  };
+
+  // /admin/users → varies
+  const refreshUsers = async () => {
+    const res = await fetchUsers("", 1);
+    if (res.success) {
+      const arr = Array.isArray(res.data) ? res.data
+        : Array.isArray(res.data?.data) ? res.data.data
+          : Array.isArray(res.data?.users) ? res.data.users
+            : Array.isArray(res.data?.data?.users) ? res.data.data.users
+              : [];
+      setDashboardData(prev => ({ ...prev, users: arr }));
+    }
+  };
+
+  const handleViewChange = (view) => {
+    setActiveView(view);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const menuGroups = [
@@ -135,14 +171,6 @@ export default function AdminDashboard() {
     }
   ];
 
-  const handleViewChange = (view) => {
-    setActiveView(view);
-    if (["HISTORY", "CANCELLED", "PENDING"].includes(view)) {
-      loadHistoryData(view);
-    }
-    if (window.innerWidth < 1024) setSidebarOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-hidden">
       {/* Sidebar Overlay */}
@@ -159,9 +187,7 @@ export default function AdminDashboard() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-      >
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <div>
@@ -201,7 +227,7 @@ export default function AdminDashboard() {
             <div className="p-4 border-t border-slate-800 bg-slate-900/50">
               <div className="flex items-center gap-3 mb-4 px-2">
                 <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white border border-indigo-400/20">
-                  {adminInfo.email[0].toUpperCase()}
+                  {adminInfo?.email?.[0]?.toUpperCase() || '?'}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Active User</span>
@@ -221,112 +247,118 @@ export default function AdminDashboard() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-600">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200 relative z-10 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-slate-600">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-lg lg:text-xl font-black text-slate-800 hidden sm:block">Admin Workspace</h1>
+          </div>
+
+          {/* THE GLOBAL REFRESH BUTTON */}
+          <button
+            onClick={handleGlobalRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 disabled:opacity-50"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
+            Refresh Data
           </button>
-          <span className="font-black tracking-tighter text-slate-900 underline decoration-indigo-500 decoration-2 underline-offset-4">URBAN CABZ</span>
-          <div className="w-10"></div>
         </header>
 
         <div className={`flex-1 overflow-y-auto ${(activeView === "DISPATCH" || activeView === "B2B_DISPATCH") ? "p-2 lg:p-2" : "p-4 lg:p-8"} CustomScrollbar`}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className={`${(activeView === "DISPATCH" || activeView === "B2B_DISPATCH") ? "w-full" : "max-w-7xl mx-auto"} space-y-6 px-1`}
-            >
-              {activeView === "STATS" && <AdminStats summary={summary} />}
+          {!dashboardData && loading ? (
+            <div className="flex h-64 items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+                <p className="text-slate-400 font-bold">Synchronizing Dashboard...</p>
+              </div>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeView}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className={`${(activeView === "DISPATCH" || activeView === "B2B_DISPATCH") ? "w-full" : "max-w-7xl mx-auto"} space-y-6 px-1`}
+              >
+                {activeView === "STATS" && <AdminStats summary={dashboardData?.stats || {}} recentUsers={dashboardData?.recentUsers || []} />}
 
-              {activeView === "DISPATCH" && (
-                <div className="h-[calc(100vh-140px)]">
-                  <BookingList
-                    tickets={tickets}
-                    selectedId={selectedTicket?.id}
-                    onSelect={setSelectedTicket}
-                  />
-                  <AnimatePresence>
-                    {selectedTicket && (
-                      <BookingDetailView
-                        booking={selectedTicket}
-                        onClose={() => setSelectedTicket(null)}
-                        onUpdate={() => {
-                          fetchAdminBookingTicket(selectedTicket.id).then(res => {
-                            if (res.success) setSelectedTicket(res.data.booking);
-                          });
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {activeView === "B2B_DISPATCH" && (
-                <div className="h-[calc(100vh-140px)]">
-                  <B2BBookingList
-                    bookings={b2bBookings}
-                    selectedId={selectedB2BBooking?.id}
-                    onSelect={setSelectedB2BBooking}
-                  />
-                  <AnimatePresence>
-                    {selectedB2BBooking && (
-                      <B2BBookingDetailView
-                        booking={selectedB2BBooking}
-                        onClose={() => setSelectedB2BBooking(null)}
-                        onUpdate={async () => {
-                          const res = await fetchB2BBookings();
-                          if (res.success) {
-                            setB2BBookings(res.data.bookings || []);
-                            const current = res.data.bookings.find(b => b.id === selectedB2BBooking.id);
-                            if (current) setSelectedB2BBooking(current);
-                          }
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-              {activeView === "B2B" && <B2BRequestsList />}
-              {activeView === "COMPANIES" && <CompanyList />}
-              {activeView === "CUSTOMERS" && <CustomerManager />}
-              {activeView === "FLEET" && <FleetManager />}
-              {activeView === "DRIVERS" && <DriverList />}
-              {activeView === "PRICING" && <PricingSettings />}
-
-              {["HISTORY", "CANCELLED", "PENDING"].includes(activeView) && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-10">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                      {activeView === "HISTORY" && "Trip Continuity 🗺️"}
-                      {activeView === "CANCELLED" && "Voided Records ❌"}
-                      {activeView === "PENDING" && "Financial Resolution ⏳"}
-                    </h2>
-                    <p className="text-slate-500 text-sm font-medium mt-1">Reviewing logs for historical and financial accuracy.</p>
+                {activeView === "DISPATCH" && (
+                  <div className="h-[calc(100vh-140px)]">
+                    <BookingList
+                      tickets={dashboardData?.bookings || []}
+                      selectedId={selectedTicket?.id}
+                      onSelect={setSelectedTicket}
+                    />
+                    <AnimatePresence>
+                      {selectedTicket && (
+                        <BookingDetailView
+                          booking={selectedTicket}
+                          onClose={() => setSelectedTicket(null)}
+                          onUpdate={refreshBookings}
+                        />
+                      )}
+                    </AnimatePresence>
                   </div>
+                )}
 
-                  {historyLoading ? (
-                    <div className="flex h-64 items-center justify-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-                        <p className="text-slate-400 font-bold">Fetching logs...</p>
-                      </div>
+                {activeView === "B2B_DISPATCH" && (
+                  <div className="h-[calc(100vh-140px)]">
+                    <B2BBookingList
+                      bookings={dashboardData?.b2bBookings || []}
+                      selectedId={selectedB2BBooking?.id}
+                      onSelect={setSelectedB2BBooking}
+                    />
+                    <AnimatePresence>
+                      {selectedB2BBooking && (
+                        <B2BBookingDetailView
+                          booking={selectedB2BBooking}
+                          onClose={() => setSelectedB2BBooking(null)}
+                          onUpdate={refreshB2BBookings}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {activeView === "B2B" && <B2BRequestsList requests={dashboardData?.b2bRequests || []} onUpdate={handleGlobalRefresh} />}
+                {activeView === "COMPANIES" && <CompanyList companies={dashboardData?.b2bCompanies || []} onUpdate={handleGlobalRefresh} />}
+                {activeView === "CUSTOMERS" && <CustomerManager users={dashboardData?.users || []} onUpdate={refreshUsers} />}
+                {activeView === "FLEET" && <FleetManager fleet={dashboardData?.fleet || []} onUpdate={refreshFleet} />}
+                {activeView === "DRIVERS" && <DriverList drivers={dashboardData?.drivers || []} onUpdate={refreshDrivers} />}
+                {activeView === "PRICING" && <PricingSettings />}
+
+                {["HISTORY", "CANCELLED", "PENDING"].includes(activeView) && (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-10">
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        {activeView === "HISTORY" && "Trip Continuity 🗺️"}
+                        {activeView === "CANCELLED" && "Voided Records ❌"}
+                        {activeView === "PENDING" && "Financial Resolution ⏳"}
+                      </h2>
+                      <p className="text-slate-500 text-sm font-medium mt-1">Reviewing logs for historical and financial accuracy.</p>
                     </div>
-                  ) : (
+
                     <HistoryTable
-                      bookings={historyData}
+                      bookings={
+                        activeView === "HISTORY" ? (dashboardData?.completedBookings || []) :
+                          activeView === "CANCELLED" ? (dashboardData?.cancelledBookings || []) :
+                            (dashboardData?.pendingPayments || [])
+                      }
                       type={activeView === "HISTORY" ? "completed" : activeView === "CANCELLED" ? "cancelled" : "pending"}
                     />
-                  )}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </div>
       </main>
     </div>

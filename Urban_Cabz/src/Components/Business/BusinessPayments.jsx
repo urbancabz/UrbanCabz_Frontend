@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { getCompanyPayments } from "../../services/authService";
 import {
     CalendarDaysIcon,
     CurrencyRupeeIcon,
@@ -12,31 +11,15 @@ import {
     ExclamationCircleIcon
 } from "@heroicons/react/24/outline";
 
-export default function BusinessPayments({ company }) {
-    const [payments, setPayments] = useState([]);
-    const [billingSummary, setBillingSummary] = useState({ totalBilled: 0, totalPaid: 0, outstanding: 0 });
-    const [loading, setLoading] = useState(true);
+export default function BusinessPayments({ company, initialPayments = null, initialBilling = null }) {
+    const [payments, setPayments] = useState(initialPayments || []);
+    const [billingSummary, setBillingSummary] = useState(initialBilling || { totalBilled: 0, totalPaid: 0, outstanding: 0 });
     const [selectedMonth, setSelectedMonth] = useState("all");
 
     useEffect(() => {
-        async function fetchPayments() {
-            const result = await getCompanyPayments();
-            if (result.success) {
-                // Handle both direct array and nested object structure
-                const data = result.data?.payments || result.data || [];
-                setPayments(Array.isArray(data) ? data : []);
-
-                // Extract billing summary if available
-                if (result.data?.billingSummary) {
-                    setBillingSummary(result.data.billingSummary);
-                } else if (result.data?.stats) {
-                    setBillingSummary(result.data.stats);
-                }
-            }
-            setLoading(false);
-        }
-        fetchPayments();
-    }, []);
+        if (initialPayments) setPayments(initialPayments);
+        if (initialBilling) setBillingSummary(initialBilling);
+    }, [initialPayments, initialBilling]);
 
     // Helper to get date from payment object
     const getPaymentDate = (p) => {
@@ -94,14 +77,6 @@ export default function BusinessPayments({ company }) {
                 return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
         }
     };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center p-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-yellow-400"></div>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-10">

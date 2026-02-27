@@ -55,9 +55,11 @@ export default function BookingList({
                         <h2 className="text-xl font-black text-slate-900 tracking-tight">Live Dispatch</h2>
                         <p className="text-sm font-medium text-slate-500">Real-time booking management</p>
                     </div>
-                    <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                        <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Live</span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Live</span>
+                        </div>
                     </div>
                 </div>
 
@@ -165,8 +167,8 @@ function BookingCard({ ticket, isSelected, onClick }) {
                     </div>
                 </div>
                 <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${isAssigned
-                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-100 text-amber-700 border border-amber-200"
+                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    : "bg-amber-100 text-amber-700 border border-amber-200"
                     }`}>
                     {isAssigned ? "Ready" : "Pending"}
                 </span>
