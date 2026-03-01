@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import * as yup from "yup";
 import {
   customerSignup,
   businessLogin,
@@ -13,6 +14,22 @@ import {
   resendVerificationOtp,
 } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
+
+const customerSignupSchema = yup.object().shape({
+  fullName: yup.string()
+    .required("Full Name is required")
+    .min(2, "Name must be at least 2 characters")
+    .matches(/^[a-zA-Z\s]*$/, "Name can only contain alphabetic characters and spaces"),
+  mobile: yup.string()
+    .required("Mobile Number is required")
+    .matches(/^\+?\d[\d\s]*\d$/, "Please enter a valid mobile number with an optional country code (e.g., +91 9876543210)")
+    .min(10, "Number must act least be 10 digits."),
+  email: yup.string().email("Invalid email format").required("Email is required"),
+  password: yup.string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .matches(/^(?=.*[a-zA-Z])(?=.*\d)/, "Password must contain at least one letter and one number"),
+});
 
 const initialForgotState = {
   identifier: "",
@@ -48,6 +65,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotForm, setForgotForm] = useState(initialForgotState);
@@ -57,13 +75,22 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationData, setVerificationData] = useState({ userId: null, otp: "" });
 
-  // Handle input changes
   const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    if (name === "mobile") {
+      newValue = newValue.replace(/[^\d\s+]/g, "");
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: newValue,
     });
     setError(""); // Clear error on input
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: "" });
+    }
   };
 
   // Handle Customer Login
@@ -110,15 +137,18 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setFieldErrors({});
 
-    if (!formData.fullName || !formData.mobile || !formData.email || !formData.password) {
-      setError("Please fill in all fields");
-      return;
-    }
-
-    // Basic mobile validation
-    if (!/^[6-9]\d{9}$/.test(formData.mobile.replace(/\D/g, "").slice(-10))) {
-      setError("Please enter a valid mobile number");
+    try {
+      await customerSignupSchema.validate(formData, { abortEarly: false });
+    } catch (err) {
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFieldErrors(validationErrors);
+      }
       return;
     }
 
@@ -126,7 +156,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
 
     const result = await customerSignup({
       fullName: formData.fullName,
-      mobile: formData.mobile,
+      mobile: formData.mobile.replace(/\s+/g, ""),
       email: formData.email,
       password: formData.password,
     });
@@ -411,6 +441,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
       companyEmail: "",
       gstNumber: "",
     });
+    setFieldErrors({});
     setForgotForm(initialForgotState);
     setShowVerification(false);
     setVerificationData({ userId: null, otp: "" });
@@ -769,6 +800,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                         disabled={loading}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
                       />
+                      {fieldErrors.fullName && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.fullName}</p>}
                     </div>
 
                     <div className="mb-3">
@@ -782,6 +814,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                         disabled={loading}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
                       />
+                      {fieldErrors.mobile && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.mobile}</p>}
                     </div>
                   </>
                 )}
@@ -799,6 +832,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                     disabled={loading}
                     className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
                   />
+                  {fieldErrors.email && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.email}</p>}
                 </div>
 
                 <div className="mb-4">
@@ -812,6 +846,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                     disabled={loading}
                     className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
                   />
+                  {fieldErrors.password && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.password}</p>}
                 </div>
 
                 <button

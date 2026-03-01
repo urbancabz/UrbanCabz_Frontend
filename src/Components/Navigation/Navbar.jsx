@@ -3,15 +3,12 @@ import { useLocation } from "react-router-dom";
 import LoginModal from "../../models/LoginModal";
 import ProfileModal from "../Profile/ProfileModal";
 import { useAuth } from "../../contexts/AuthContext";
-import { useTheme } from "../../contexts/ThemeContext";
-import { Sun, Moon } from "lucide-react";
 
 export default function Navbar({ variant = "customer" }) {
   const [showLogin, setShowLogin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const location = useLocation();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   const isOnBusinessPage =
     location.pathname.startsWith("/b2b") ||
@@ -91,11 +88,11 @@ export default function Navbar({ variant = "customer" }) {
 
   return (
     <>
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] z-50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-xl rounded-2xl transition-colors duration-300">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] md:w-[90%] z-50 bg-white/40 backdrop-blur-2xl border border-white/30 shadow-xl rounded-2xl transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
 
           {/* Brand */}
-          <h4 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors">
+          <h4 className="text-3xl font-extrabold text-gray-900 tracking-tight transition-colors">
             Urban <span className="text-yellow-500">Cabz</span>
           </h4>
 
@@ -114,30 +111,12 @@ export default function Navbar({ variant = "customer" }) {
               </a>
             )}
 
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-gray-900/5 dark:bg-white/10 text-gray-800 dark:text-white hover:bg-yellow-400 transition-all duration-300 shadow-sm border border-black/5 dark:border-white/10"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-
             {/* Auth Action */}
             {renderAuthButton("desktop")}
           </div>
 
           {/* Mobile Navigation */}
           <div className="md:hidden flex items-center gap-2">
-
-            {/* Theme Toggle Mobile */}
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-lg bg-gray-900/5 dark:bg-white/10 text-gray-900 dark:text-white border border-black/5 dark:border-white/10"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
 
             {/* Business / Home toggle */}
             {!isOnBusinessPage && (

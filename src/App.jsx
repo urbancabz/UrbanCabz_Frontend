@@ -10,7 +10,6 @@ import {
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import AdminRoute from "./Components/Navigation/AdminRoute";
-import { ThemeProvider } from "./contexts/ThemeContext";
 import { Toaster } from "react-hot-toast";
 
 // Lazy load pages for better code splitting
@@ -270,12 +269,10 @@ const AppLayout = () => {
 function App() {
   return (
     <div className="">
-      <ThemeProvider>
-        <Toaster position="top-center" />
-        <Router>
-          <AppLayout />
-        </Router>
-      </ThemeProvider>
+      <Toaster position="top-center" />
+      <Router>
+        <AppLayout />
+      </Router>
     </div>
   );
 }

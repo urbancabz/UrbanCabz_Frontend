@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import BookingDetailsMain from "../Components/BookingDetails/BookingDetailsMain";
 import BookingDetailsSidebar from "../Components/BookingDetails/BookingDetailsSidebar";
 import { useAuth } from "../contexts/AuthContext";
+import * as yup from "yup";
 import { initiateRazorpayPayment } from "../services/paymentService";
 import { fetchPricingSettings } from "../services/fleetService";
 
@@ -12,16 +13,35 @@ import { fetchPricingSettings } from "../services/fleetService";
  *
  * Expect state: { listing, from, to, pickupDate, pickupTime, distanceKm }
  */
+
+const bookingSchema = yup.object().shape({
+  name: yup.string()
+    .required("Name is required")
+    .min(2, "Name must be at least 2 characters")
+    .matches(/^[a-zA-Z\s]*$/, "Name can only contain alphabetic characters and spaces"),
+  phone: yup.string()
+    .required("Phone is required")
+    .matches(/^\+?\d[\d\s]*\d$/, "Please enter a valid mobile number with an optional country code (e.g., +91 9876543210)")
+    .test('len', 'Invalid phone number (10 digits required)', val => val && val.replace(/\D/g, '').length >= 10),
+  email: yup.string().email("Invalid email format").required("Email is required"),
+});
+
 export default function CabBookingDetails() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [passengerDetails, setPassengerDetails] = React.useState({
-    name: user?.name || user?.fullName || "",
-    phone: user?.phone || user?.mobile || "",
-    email: user?.email || "",
-    remarks: ""
+  const [passengerDetails, setPassengerDetails] = React.useState(() => {
+    let formattedPhone = user?.phone || user?.mobile || "";
+    if (formattedPhone.startsWith("+91") && formattedPhone.length > 3 && formattedPhone[3] !== ' ') {
+      formattedPhone = `+91 ${formattedPhone.slice(3)}`;
+    }
+    return {
+      name: user?.name || user?.fullName || "",
+      phone: formattedPhone,
+      email: user?.email || "",
+      remarks: ""
+    };
   });
   const [formErrors, setFormErrors] = React.useState({});
   const [pricingSettings, setPricingSettings] = React.useState(null);
@@ -35,7 +55,18 @@ export default function CabBookingDetails() {
   }, []);
 
   const handleFormChange = (field, value) => {
-    setPassengerDetails(prev => ({ ...prev, [field]: value }));
+    let newValue = value;
+
+    // Sync UI formatting for phone numbers like in Profile
+    if (field === "phone") {
+      newValue = newValue.replace(/[^\d\s+]/g, ""); // Allow only digits, space, plus
+      // Auto-format spacing after country code if standard +91 is used without spaces
+      if (newValue.startsWith("+91") && newValue.length > 3 && newValue[3] !== ' ') {
+        newValue = newValue.slice(0, 3) + ' ' + newValue.slice(3);
+      }
+    }
+
+    setPassengerDetails(prev => ({ ...prev, [field]: newValue }));
     // Clear error when user types
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
@@ -105,16 +136,18 @@ export default function CabBookingDetails() {
 
   const onPayNow = async (amount) => {
     // Validate Form
-    const errors = {};
-    if (!passengerDetails.name.trim()) errors.name = "Name is required";
-    if (!passengerDetails.phone.trim()) errors.phone = "Phone is required";
-    else if (!/^\d{10}$/.test(passengerDetails.phone.replace(/\D/g, ''))) errors.phone = "Invalid phone number (10 digits required)";
-    if (!passengerDetails.email.trim()) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passengerDetails.email)) errors.email = "Invalid email format";
+    setFormErrors({});
 
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      alert("Please correct the errors in passenger details.");
+    try {
+      await bookingSchema.validate(passengerDetails, { abortEarly: false });
+    } catch (err) {
+      if (err.inner) {
+        const errors = {};
+        err.inner.forEach((error) => {
+          errors[error.path] = error.message;
+        });
+        setFormErrors(errors);
+      }
       return;
     }
 
@@ -132,14 +165,17 @@ export default function CabBookingDetails() {
       pickupTime,
       distanceKm: billableDistance,
       rideType,
-      passengerDetails, // Pass collected details
+      passengerDetails: {
+        ...passengerDetails,
+        phone: passengerDetails.phone.replace(/\s+/g, ""), // strip space before api
+      },
     };
 
     // Use user details from form for prefill
     const prefill = {
       name: passengerDetails.name,
       email: passengerDetails.email,
-      contact: passengerDetails.phone,
+      contact: passengerDetails.phone.replace(/\s+/g, ""),
     };
 
     const result = await initiateRazorpayPayment({
