@@ -4,7 +4,7 @@ import BookingDetailsMain from "../Components/BookingDetails/BookingDetailsMain"
 import BookingDetailsSidebar from "../Components/BookingDetails/BookingDetailsSidebar";
 import { useAuth } from "../contexts/AuthContext";
 import * as yup from "yup";
-import { initiateRazorpayPayment } from "../services/paymentService";
+import { createDirectBooking } from "../services/bookingService";
 import { fetchPricingSettings } from "../services/fleetService";
 
 /**
@@ -134,7 +134,7 @@ export default function CabBookingDetails() {
 
   const goBack = () => navigate(-1);
 
-  const onPayNow = async (amount) => {
+  const onBookNow = async () => {
     // Validate Form
     setFormErrors({});
 
@@ -151,45 +151,26 @@ export default function CabBookingDetails() {
       return;
     }
 
-    const bookingDetails = {
-      amount,
-      totalFare: price,
-      payNowAmount: amount,
-      vehicleId: listing.id,
-      vehicleName: listing.name,
-      vehicleType: listing.vehicleType,
-      from,
-      to,
-      pickupDate,
-      returnDate,
-      pickupTime,
+    const payload = {
+      pickupLocation: from,
+      dropLocation: to,
       distanceKm: billableDistance,
-      rideType,
-      passengerDetails: {
-        ...passengerDetails,
-        phone: passengerDetails.phone.replace(/\s+/g, ""), // strip space before api
-      },
+      estimatedFare: price,
+      totalAmount: price,
+      carModel: listing.name,
+      // Format scheduledAt to expected ISO format if provided
+      scheduledAt: (pickupDate && pickupDate !== "—" && pickupTime && pickupTime !== "—")
+        ? new Date(`${pickupDate}T${pickupTime}:00`).toISOString()
+        : null
     };
 
-    // Use user details from form for prefill
-    const prefill = {
-      name: passengerDetails.name,
-      email: passengerDetails.email,
-      contact: passengerDetails.phone.replace(/\s+/g, ""),
-    };
-
-    const result = await initiateRazorpayPayment({
-      amount,
-      currency: "INR",
-      bookingDetails,
-      prefill,
-    });
+    const result = await createDirectBooking(payload);
 
     if (result.success) {
-      alert("Payment  successfuland booking confirmed!");
+      alert("Booking confirmed successfully! (Payment pending by admin)");
       navigate("/");
-    } else if (!result.cancelled) {
-      alert(result.message || "Payment failed. Please try again.");
+    } else {
+      alert(result.message || "Booking failed. Please try again.");
     }
   };
 
@@ -241,7 +222,7 @@ export default function CabBookingDetails() {
 
           {/* Right: payment summary (floats on large screens) */}
           <aside className="lg:sticky lg:top-28">
-            <BookingDetailsSidebar price={price} onPayNow={onPayNow} />
+            <BookingDetailsSidebar price={price} onBookNow={onBookNow} />
           </aside>
         </div>
       </div>
