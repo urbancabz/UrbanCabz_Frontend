@@ -17,14 +17,12 @@ export default function AdminRoute({ children }) {
 
     (async () => {
       try {
-        console.log('🛡️ AdminRoute: verifying access...');
         // Small delay to ensure localStorage is updated if coming from login
         await new Promise(r => setTimeout(r, 100));
 
         const me = await fetchAdminMe();
         if (!cancelled) {
           if (me.success) {
-            console.log('✅ AdminRoute: allowed');
             setAllowed(true);
           } else {
             console.warn('⛔ AdminRoute: denied', me.message);

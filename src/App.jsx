@@ -242,6 +242,15 @@ const AppLayout = () => {
     return <Navigate to="/admin" replace />;
   }
 
+  // Redirect business users away from consumer landing pages to their dashboard
+  const userType = localStorage.getItem("userType");
+  const isBusinessUser = userType === "business";
+  const consumerRedirectRoutes = ["/", "/b2b", "/cab-booking", "/cab-booking-details"];
+
+  if (isBusinessUser && consumerRedirectRoutes.includes(location.pathname)) {
+    return <Navigate to="/business/dashboard" replace />;
+  }
+
   // While we are checking admin status, show minimal UI for regular users
   if (checkingAdmin && !isAdminRoute) {
     return (

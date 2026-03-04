@@ -459,6 +459,7 @@ export async function requestPasswordReset(payload) {
   const body = {};
   if (payload.email) body.email = payload.email;
   if (payload.phone) body.phone = payload.phone;
+  if (payload.otpTo) body.otpTo = payload.otpTo;
 
   try {
     const response = await fetch(`${API_BASE_URL}/auth/password/forgot`, {
