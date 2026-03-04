@@ -194,13 +194,21 @@ export async function fetchAdminBookingTicket(bookingId) {
 }
 
 export async function upsertTaxiAssignment(bookingId, payload) {
+  // Map frontend fields to backend expected fields
+  const backendPayload = {
+    driverName: payload.driverName,
+    driverNumber: payload.driverPhone || payload.driverNumber, // Map phone to number
+    cabNumber: payload.carNumber || payload.cabNumber,        // Map car to cab
+    cabName: payload.carModel || payload.cabName              // Map model to name
+  };
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/admin/bookings/${bookingId}/assign-taxi`,
       {
         method: "POST",
         headers: buildAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(backendPayload),
       }
     );
     const data = await response.json().catch(() => ({}));

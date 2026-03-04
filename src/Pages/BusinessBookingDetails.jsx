@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { bookBusinessRide } from "../services/authService";
 import { ArrowLeftIcon, MapPinIcon, CalendarIcon, ClockIcon, UserIcon, PhoneIcon, EnvelopeIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
+import { TruckIcon } from "@heroicons/react/24/solid";
 
 export default function BusinessBookingDetails() {
     const { state } = useLocation();
@@ -17,9 +18,16 @@ export default function BusinessBookingDetails() {
     const distanceKm = state?.distanceKm ?? 0;
     const totalAmount = state?.totalAmount || 0;
 
+    const getInitialPhone = () => {
+        let p = user?.phone || user?.mobile || "";
+        if (p.startsWith("+91")) return p.replace("+91", "").trim();
+        if (p.startsWith("91") && p.length === 12) return p.slice(2).trim();
+        return p;
+    };
+
     const [passengerDetails, setPassengerDetails] = useState({
         name: user?.name || user?.fullName || "",
-        phone: user?.phone || user?.mobile || "",
+        phone: getInitialPhone(),
         email: user?.email || "",
         remarks: ""
     });
@@ -28,7 +36,11 @@ export default function BusinessBookingDetails() {
     const [formErrors, setFormErrors] = useState({});
 
     const handleFormChange = (field, value) => {
-        setPassengerDetails(prev => ({ ...prev, [field]: value }));
+        let newValue = value;
+        if (field === "phone") {
+            newValue = newValue.replace(/[^\d]/g, "").slice(0, 10);
+        }
+        setPassengerDetails(prev => ({ ...prev, [field]: newValue }));
         if (formErrors[field]) {
             setFormErrors(prev => ({ ...prev, [field]: null }));
         }
@@ -235,12 +247,19 @@ export default function BusinessBookingDetails() {
                         <div className="sticky top-8 space-y-6">
                             {/* Vehicle & Price Card */}
                             <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6">
-                                <div className="aspect-video rounded-2xl bg-neutral-800 overflow-hidden mb-6">
-                                    <img
-                                        src={listing.image_url || listing.image || "/Dzire.avif"}
-                                        alt={listing.name}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.src = "/Dzire.avif"; }}
+                                <div className="aspect-video rounded-2xl bg-neutral-800 overflow-hidden mb-6 flex items-center justify-center">
+                                    {(listing.image_url || listing.image) ? (
+                                        <img
+                                            src={listing.image_url || listing.image}
+                                            alt={listing.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                        />
+                                    ) : null}
+                                    {/* Fallback Icon */}
+                                    <TruckIcon
+                                        className="w-20 h-20 text-neutral-600"
+                                        style={{ display: (listing.image_url || listing.image) ? 'none' : 'block' }}
                                     />
                                 </div>
 

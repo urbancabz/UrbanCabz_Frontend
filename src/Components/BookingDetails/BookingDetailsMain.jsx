@@ -1,4 +1,5 @@
 import { useAuth } from "../../contexts/AuthContext";
+import { TruckIcon } from "@heroicons/react/24/solid";
 
 /**
  * BookingDetailsMain
@@ -33,11 +34,18 @@ export default function BookingDetailsMain({
       <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-100 p-5 sm:p-6 lg:p-7 flex flex-col md:flex-row gap-5 md:gap-7">
         {/* Vehicle block */}
         <div className="w-full md:w-40 lg:w-44 flex-shrink-0">
-          <div className="relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 p-4 flex items-center justify-center">
-            <img
-              src={image}
-              alt={name}
-              className="w-full h-28 object-contain"
+          <div className="relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 p-4 flex items-center justify-center min-h-[140px]">
+            {image && image !== "/Dzire.avif" ? (
+              <img
+                src={image}
+                alt={name}
+                className="w-full h-28 object-contain"
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+              />
+            ) : null}
+            <TruckIcon
+              className="w-16 h-16 text-slate-300"
+              style={{ display: (image && image !== "/Dzire.avif") ? 'none' : 'block' }}
             />
             <div className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium text-slate-100">
               {rideType === "roundtrip" ? "Round trip" : "One way"}

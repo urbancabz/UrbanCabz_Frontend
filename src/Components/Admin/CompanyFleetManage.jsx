@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TruckIcon } from "@heroicons/react/24/solid";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
@@ -164,12 +165,18 @@ export default function CompanyFleetManage({ company, onClose }) {
                                         className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex items-center justify-between group hover:bg-white hover:shadow-xl hover:border-indigo-500/20 transition-all"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-20 h-16 bg-white rounded-xl overflow-hidden border border-slate-200">
-                                                <img
-                                                    src={item.vehicle.image_url || "/Dzire.avif"}
-                                                    className="w-full h-full object-cover"
-                                                    alt={item.vehicle.name}
-                                                    onError={(e) => e.target.src = "/Dzire.avif"}
+                                            <div className="w-20 h-16 bg-white rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
+                                                {(item.vehicle.image_url && item.vehicle.image_url !== "/Dzire.avif") ? (
+                                                    <img
+                                                        src={item.vehicle.image_url}
+                                                        className="w-full h-full object-cover"
+                                                        alt={item.vehicle.name}
+                                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                                    />
+                                                ) : null}
+                                                <TruckIcon
+                                                    className="w-8 h-8 text-slate-300"
+                                                    style={{ display: (item.vehicle.image_url && item.vehicle.image_url !== "/Dzire.avif") ? 'none' : 'block' }}
                                                 />
                                             </div>
                                             <div>

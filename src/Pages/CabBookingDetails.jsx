@@ -21,8 +21,7 @@ const bookingSchema = yup.object().shape({
     .matches(/^[a-zA-Z\s]*$/, "Name can only contain alphabetic characters and spaces"),
   phone: yup.string()
     .required("Phone is required")
-    .matches(/^\+?\d[\d\s]*\d$/, "Please enter a valid mobile number with an optional country code (e.g., +91 9876543210)")
-    .test('len', 'Invalid phone number (10 digits required)', val => val && val.replace(/\D/g, '').length >= 10),
+    .matches(/^\d{10}$/, "Please enter a valid 10-digit mobile number"),
   email: yup.string().email("Invalid email format").required("Email is required"),
 });
 
@@ -33,8 +32,11 @@ export default function CabBookingDetails() {
 
   const [passengerDetails, setPassengerDetails] = React.useState(() => {
     let formattedPhone = user?.phone || user?.mobile || "";
-    if (formattedPhone.startsWith("+91") && formattedPhone.length > 3 && formattedPhone[3] !== ' ') {
-      formattedPhone = `+91 ${formattedPhone.slice(3)}`;
+    // Remove +91 or 91 country code if it exists
+    if (formattedPhone.startsWith("+91")) {
+      formattedPhone = formattedPhone.replace("+91", "").trim();
+    } else if (formattedPhone.startsWith("91") && formattedPhone.length === 12) {
+      formattedPhone = formattedPhone.slice(2).trim();
     }
     return {
       name: user?.name || user?.fullName || "",
@@ -57,13 +59,8 @@ export default function CabBookingDetails() {
   const handleFormChange = (field, value) => {
     let newValue = value;
 
-    // Sync UI formatting for phone numbers like in Profile
     if (field === "phone") {
-      newValue = newValue.replace(/[^\d\s+]/g, ""); // Allow only digits, space, plus
-      // Auto-format spacing after country code if standard +91 is used without spaces
-      if (newValue.startsWith("+91") && newValue.length > 3 && newValue[3] !== ' ') {
-        newValue = newValue.slice(0, 3) + ' ' + newValue.slice(3);
-      }
+      newValue = newValue.replace(/[^\d]/g, "").slice(0, 10);
     }
 
     setPassengerDetails(prev => ({ ...prev, [field]: newValue }));
@@ -161,7 +158,8 @@ export default function CabBookingDetails() {
       // Format scheduledAt to expected ISO format if provided
       scheduledAt: (pickupDate && pickupDate !== "—" && pickupTime && pickupTime !== "—")
         ? new Date(`${pickupDate}T${pickupTime}:00`).toISOString()
-        : null
+        : null,
+      passengerDetails
     };
 
     const result = await createDirectBooking(payload);

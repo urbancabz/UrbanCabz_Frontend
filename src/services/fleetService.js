@@ -48,24 +48,38 @@ export async function fetchPublicFleet() {
     }
 }
 
+let pricingSettingsPromise = null;
+
 /**
  * Fetch global pricing settings
  */
-export async function fetchPricingSettings() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/pricing/public`, {
-            method: "GET",
-            headers: buildAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to fetch settings" };
-        }
-        return { success: true, data: data.data };
-    } catch (error) {
-        console.error("Error fetching pricing settings:", error);
-        return { success: false, message: "Network error while fetching settings" };
+export function fetchPricingSettings() {
+    if (pricingSettingsPromise) {
+        return pricingSettingsPromise;
     }
+
+    pricingSettingsPromise = (async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/pricing/public`, {
+                method: "GET",
+                headers: buildAuthHeaders(),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                pricingSettingsPromise = null; // Reset on error so next time it retries
+                return { success: false, message: data.message || "Failed to fetch settings" };
+            }
+
+            return { success: true, data: data.data };
+        } catch (error) {
+            console.error("Error fetching pricing settings:", error);
+            pricingSettingsPromise = null; // Reset on error so next time it retries
+            return { success: false, message: "Network error while fetching settings" };
+        }
+    })();
+
+    return pricingSettingsPromise;
 }
 
 

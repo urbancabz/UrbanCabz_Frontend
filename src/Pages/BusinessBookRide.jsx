@@ -5,6 +5,7 @@ import { bookBusinessRide } from "../services/authService";
 import { fetchMyFleet } from "../services/fleetService";
 import BookingSidebar from "../Components/CabBooking/BookingSidebar";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { TruckIcon } from "@heroicons/react/24/solid";
 
 export default function BusinessBookRide() {
     const navigate = useNavigate();
@@ -163,12 +164,19 @@ export default function BusinessBookRide() {
                                     const finalPrice = Math.round(billableDistance * rate);
                                     return (
                                         <div key={vehicle.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 hover:border-yellow-500/50 transition-all">
-                                            <div className="w-full sm:w-48 h-32 bg-neutral-800 rounded-2xl overflow-hidden shrink-0">
-                                                <img
-                                                    src={vehicle.image_url || vehicle.image || "/Dzire.avif"}
-                                                    alt={vehicle.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { e.target.src = "/Dzire.avif"; }}
+                                            <div className="w-full sm:w-48 h-32 bg-neutral-800 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center">
+                                                {(vehicle.image_url || vehicle.image) ? (
+                                                    <img
+                                                        src={vehicle.image_url || vehicle.image}
+                                                        alt={vehicle.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                                    />
+                                                ) : null}
+                                                {/* Fallback Icon */}
+                                                <TruckIcon
+                                                    className="w-16 h-16 text-neutral-600"
+                                                    style={{ display: (vehicle.image_url || vehicle.image) ? 'none' : 'block' }}
                                                 />
                                             </div>
                                             <div className="flex-1 flex flex-col justify-between">

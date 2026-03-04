@@ -247,11 +247,11 @@ export default function Input({ destinationPath = "/cab-booking" }) {
 
     try {
       let metrics;
-      if (pickupCoords && dropCoords && fromQuery === "Pinned Location" && toQuery === "Pinned Location") {
+      if (pickupCoords && dropCoords) {
         metrics = await RoutingService.getDistanceAndDuration(pickupCoords, dropCoords);
-      } else if (pickupCoords && fromQuery === "Pinned Location") {
+      } else if (pickupCoords) {
         metrics = await RoutingService.getDistanceAndDuration(pickupCoords, toQuery);
-      } else if (dropCoords && toQuery === "Pinned Location") {
+      } else if (dropCoords) {
         metrics = await RoutingService.getDistanceAndDuration(fromQuery, dropCoords);
       } else {
         metrics = await RoutingService.getDistanceAndDuration(fromQuery, toQuery);
@@ -335,7 +335,11 @@ export default function Input({ destinationPath = "/cab-booking" }) {
                   <input
                     type="text"
                     value={fromQuery}
-                    onChange={(e) => { setFromQuery(e.target.value); setShowFromSuggestions(true); }}
+                    onChange={(e) => {
+                      setFromQuery(e.target.value);
+                      setPickupCoords(null);
+                      setShowFromSuggestions(true);
+                    }}
                     onBlur={() => hideWithDelay(setShowFromSuggestions)}
                     onFocus={() => setShowFromSuggestions(true)}
                     placeholder={rideType === "airport" ? "Select pickup airport" : "Enter pickup city or place"}
@@ -392,7 +396,11 @@ export default function Input({ destinationPath = "/cab-booking" }) {
                   <input
                     type="text"
                     value={toQuery}
-                    onChange={(e) => { setToQuery(e.target.value); setShowToSuggestions(true); }}
+                    onChange={(e) => {
+                      setToQuery(e.target.value);
+                      setDropCoords(null);
+                      setShowToSuggestions(true);
+                    }}
                     onBlur={() => hideWithDelay(setShowToSuggestions)}
                     onFocus={() => setShowToSuggestions(true)}
                     placeholder={rideType === "airport" ? "Select destination airport" : "Enter destination city or place"}
