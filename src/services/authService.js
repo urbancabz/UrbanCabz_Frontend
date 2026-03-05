@@ -208,6 +208,7 @@ export async function requestPasswordReset(payload) {
   const body = {};
   if (payload.email) body.email = payload.email;
   if (payload.phone) body.phone = payload.phone;
+  if (payload.otpTo) body.otpTo = payload.otpTo;
   return apiClient.post("/auth/password/forgot", body);
 }
 

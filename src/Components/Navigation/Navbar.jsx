@@ -92,9 +92,9 @@ export default function Navbar({ variant = "customer" }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
 
           {/* Brand */}
-          <h4 className="text-3xl font-extrabold text-gray-900 tracking-tight transition-colors">
+          <a href="/" className="text-3xl font-extrabold text-gray-900 tracking-tight transition-colors hover:opacity-80">
             Urban <span className="text-yellow-500">Cabz</span>
-          </h4>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">

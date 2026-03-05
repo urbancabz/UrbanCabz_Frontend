@@ -10,6 +10,5 @@ export async function createDirectBooking(payload) {
 
 // Legacy/Mock if needed
 export function createBooking(payload) {
-  console.log("Booking request:", payload);
   return { data: true, error: null };
 }

@@ -32,7 +32,8 @@ const customerSignupSchema = yup.object().shape({
 });
 
 const initialForgotState = {
-  identifier: "",
+  email: "",
+  otpTo: "",
   otp: "",
   newPassword: "",
   confirmPassword: "",
@@ -329,21 +330,25 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setSuccess("");
 
     if (forgotForm.step === "request") {
-      if (!forgotForm.identifier) {
-        setError("Please enter your registered email or phone number");
+      if (!forgotForm.email) {
+        setError("Please enter your registered email address");
+        return;
+      }
+      if (!forgotForm.email.includes("@")) {
+        setError("Please enter a valid email address");
         return;
       }
 
       setForgotLoading(true);
-      const payload = forgotForm.identifier.includes("@")
-        ? { email: forgotForm.identifier.trim() }
-        : { phone: forgotForm.identifier.trim() };
-      const result = await requestPasswordReset(payload);
+      const result = await requestPasswordReset({
+        email: forgotForm.email.trim(),
+        otpTo: forgotForm.otpTo.trim() || undefined,
+      });
       setForgotLoading(false);
 
       if (result.success) {
         setSuccess(
-          `OTP sent via SMS (${result.data?.destination || "registered number"})`
+          `OTP sent to ${result.data?.destination || "registered number"}`
         );
         setForgotForm((prev) => ({
           ...prev,
@@ -400,25 +405,24 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   };
 
   const handleResendOtp = async () => {
-    if (!forgotForm.identifier) {
-      setError("Enter your email or phone to resend OTP");
+    if (!forgotForm.email) {
+      setError("Enter your email to resend OTP");
       return;
     }
     setError("");
     setSuccess("");
     setForgotLoading(true);
-    const payload = forgotForm.identifier.includes("@")
-      ? { email: forgotForm.identifier.trim() }
-      : { phone: forgotForm.identifier.trim() };
-    const result = await requestPasswordReset(payload);
+    const result = await requestPasswordReset({
+      email: forgotForm.email.trim(),
+      otpTo: forgotForm.otpTo.trim() || undefined,
+    });
     setForgotLoading(false);
 
     if (result.success) {
-      setSuccess("New OTP sent to your mobile number.");
+      setSuccess("New OTP sent.");
       setForgotForm((prev) => ({
         ...prev,
         resetId: result.data?.resetId,
-        step: "verify",
       }));
     } else {
       setError(result.message || "Unable to resend OTP. Try again.");
@@ -562,20 +566,38 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                   <h2 className="text-2xl font-semibold text-center mb-5">Reset Password</h2>
 
                   {forgotForm.step === "request" ? (
-                    <div className="mb-4">
-                      <label className="block text-sm text-white/85 mb-1">
-                        Registered Email or Phone
-                      </label>
-                      <input
-                        type="text"
-                        name="identifier"
-                        value={forgotForm.identifier}
-                        onChange={handleForgotChange}
-                        placeholder="you@example.com / +91XXXXXXXXXX"
-                        disabled={forgotLoading}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
-                      />
-                    </div>
+                    <>
+                      <div className="mb-3">
+                        <label className="block text-sm text-white/85 mb-1">
+                          Registered Email *
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={forgotForm.email}
+                          onChange={handleForgotChange}
+                          placeholder="you@example.com"
+                          disabled={forgotLoading}
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
+                          autoComplete="email"
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm text-white/85 mb-1">
+                          Send OTP to (Phone or Email)
+                        </label>
+                        <input
+                          type="text"
+                          name="otpTo"
+                          value={forgotForm.otpTo}
+                          onChange={handleForgotChange}
+                          placeholder="+91XXXXXXXXXX or you@example.com"
+                          disabled={forgotLoading}
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
+                        />
+                        <p className="text-white/40 text-xs mt-1">Optional — leave blank to use the phone number registered on this account</p>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="mb-3">

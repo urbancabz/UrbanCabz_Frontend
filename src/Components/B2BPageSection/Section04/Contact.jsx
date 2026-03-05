@@ -1,6 +1,23 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { registerB2BRequest } from "../../../services/authService";
+import * as yup from "yup";
+
+const contactSchema = yup.object().shape({
+    name: yup.string()
+        .required("Name is required")
+        .min(2, "Name must be at least 2 characters")
+        .matches(/^[a-zA-Z\s]*$/, "Name can only contain alphabetic characters and spaces"),
+    company: yup.string()
+        .required("Company is required")
+        .min(2, "Company Name must be at least 2 characters"),
+    email: yup.string().email("Invalid email format").required("Email is required"),
+    phone: yup.string()
+        .required("Phone Number is required")
+        .matches(/^\+?\d[\d\s]*\d$/, "Please enter a valid phone number")
+        .min(10, "Number must act least be 10 digits."),
+    message: yup.string(),
+});
 
 export default function Contact() {
     const [formState, setFormState] = useState({
@@ -12,15 +29,40 @@ export default function Contact() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const handleChange = (e) => {
-        setFormState({ ...formState, [e.target.name]: e.target.value });
+        let { name, value } = e.target;
+
+        if (name === "phone") {
+            value = value.replace(/[^\d\s+]/g, "");
+        }
+
+        setFormState({ ...formState, [name]: value });
+        if (fieldErrors[name]) {
+            setFieldErrors({ ...fieldErrors, [name]: "" });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setSubmitStatus(null);
+        setFieldErrors({});
+
+        try {
+            await contactSchema.validate(formState, { abortEarly: false });
+        } catch (err) {
+            if (err.inner) {
+                const validationErrors = {};
+                err.inner.forEach((error) => {
+                    validationErrors[error.path] = error.message;
+                });
+                setFieldErrors(validationErrors);
+            }
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
             const res = await registerB2BRequest(formState);
@@ -101,7 +143,7 @@ export default function Contact() {
                         transition={{ duration: 0.6 }}
                         className="bg-neutral-800 p-8 sm:p-10 rounded-3xl border border-neutral-700"
                     >
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} noValidate className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-medium text-neutral-400 mb-2">Name</label>
@@ -109,12 +151,12 @@ export default function Contact() {
                                         type="text"
                                         id="name"
                                         name="name"
-                                        required
                                         value={formState.name}
                                         onChange={handleChange}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
                                         placeholder="John Doe"
                                     />
+                                    {fieldErrors.name && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.name}</p>}
                                 </div>
                                 <div>
                                     <label htmlFor="company" className="block text-sm font-medium text-neutral-400 mb-2">Company</label>
@@ -122,12 +164,12 @@ export default function Contact() {
                                         type="text"
                                         id="company"
                                         name="company"
-                                        required
                                         value={formState.company}
                                         onChange={handleChange}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
                                         placeholder="Company Ltd"
                                     />
+                                    {fieldErrors.company && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.company}</p>}
                                 </div>
                             </div>
 
@@ -138,12 +180,12 @@ export default function Contact() {
                                         type="email"
                                         id="email"
                                         name="email"
-                                        required
                                         value={formState.email}
                                         onChange={handleChange}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
                                         placeholder="john@company.com"
                                     />
+                                    {fieldErrors.email && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.email}</p>}
                                 </div>
                                 <div>
                                     <label htmlFor="phone" className="block text-sm font-medium text-neutral-400 mb-2">Phone</label>
@@ -151,12 +193,12 @@ export default function Contact() {
                                         type="tel"
                                         id="phone"
                                         name="phone"
-                                        required
                                         value={formState.phone}
                                         onChange={handleChange}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
                                         placeholder="+91 90338 77967"
                                     />
+                                    {fieldErrors.phone && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.phone}</p>}
                                 </div>
                             </div>
 

@@ -27,10 +27,8 @@ export default function CustomerHistory({ user, onClose }) {
 
     const loadHistory = async () => {
         setLoading(true);
-        console.log("CustomerHistory loading for user:", user);
         try {
             const res = await fetchUserBookings(user.id, page);
-            console.log("fetchUserBookings response:", res);
             if (res.success) {
                 setBookings(res.data.bookings || []); // Ensure array
                 setStats(res.data.stats || { totalRides: 0, totalSpent: 0 });
