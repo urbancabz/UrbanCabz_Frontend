@@ -48,6 +48,8 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
   const navigate = useNavigate();
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -108,7 +110,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setLoading(true);
 
     const result = await loginCustomer({
-      email: formData.email,
+      email: formData.email.toLowerCase().trim(),
       password: formData.password,
     });
 
@@ -158,7 +160,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     const result = await customerSignup({
       fullName: formData.fullName,
       mobile: formData.mobile.replace(/\s+/g, ""),
-      email: formData.email,
+      email: formData.email.toLowerCase().trim(),
       password: formData.password,
     });
 
@@ -222,7 +224,7 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
     setLoading(true);
 
     const result = await businessLogin({
-      email: formData.email,
+      email: formData.email.toLowerCase().trim(),
       password: formData.password,
     });
 
@@ -612,17 +614,33 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                           className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
                         />
                       </div>
-                      <div className="mb-3">
+                      <div className="mb-3 relative">
                         <label className="block text-sm text-white/85 mb-1">New Password</label>
                         <input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           name="newPassword"
                           value={forgotForm.newPassword}
                           onChange={handleForgotChange}
                           placeholder="Create a new password"
                           disabled={forgotLoading}
-                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50 pr-12"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-[34px] p-2 text-white/50 hover:text-white transition-colors"
+                        >
+                          {showPassword ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                       <div className="flex justify-end mb-2">
                         <button
@@ -634,17 +652,33 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                           Resend OTP
                         </button>
                       </div>
-                      <div className="mb-4">
+                      <div className="mb-4 relative">
                         <label className="block text-sm text-white/85 mb-1">Confirm Password</label>
                         <input
-                          type="password"
+                          type={showConfirmPassword ? "text" : "password"}
                           name="confirmPassword"
                           value={forgotForm.confirmPassword}
                           onChange={handleForgotChange}
                           placeholder="Re-enter new password"
                           disabled={forgotLoading}
-                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-4 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-300 font-medium disabled:opacity-50 pr-12"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-[34px] p-2 text-white/50 hover:text-white transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     </>
                   )}
@@ -700,32 +734,64 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                     />
                   </div>
 
-                  <div className="mb-3">
+                  <div className="mb-3 relative">
                     <label className="block text-sm text-white/85 mb-1">
                       {isFirstLogin ? "Create Permanent Password" : "Password"}
                     </label>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
                       disabled={loading}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
+                      className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50 pr-12"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-[34px] p-2 text-white/50 hover:text-white transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
 
                   {isFirstLogin && (
-                    <div className="mb-3">
+                    <div className="mb-3 relative">
                       <label className="block text-sm text-white/85 mb-1">Confirm New Password</label>
                       <input
-                        type="password"
+                        type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
                         disabled={loading}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50 pr-12"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-[34px] p-2 text-white/50 hover:text-white transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
                   )}
 
@@ -857,17 +923,33 @@ export default function Login_SignUp_Model({ onClose, variant = "customer" }) {
                   {fieldErrors.email && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.email}</p>}
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-4 relative">
                   <label className="block text-sm text-white/85 mb-1">Password *</label>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Create a password"
                     disabled={loading}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50"
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 focus:border-yellow-400/50 focus:bg-white/20 text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400/20 backdrop-blur-sm outline-none transition-all duration-200 disabled:opacity-50 pr-12"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[26px] p-2 text-white/50 hover:text-white transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                   {fieldErrors.password && <p className="text-red-400 text-xs mt-1 ml-1 font-medium">{fieldErrors.password}</p>}
                 </div>
 
