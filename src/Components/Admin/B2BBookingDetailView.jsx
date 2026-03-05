@@ -4,9 +4,18 @@ import {
     upsertB2BTaxiAssignment,
     updateB2BBookingStatus,
     completeB2BTrip,
-    cancelB2BBooking,
-    markB2BBillPaid
+    cancelB2BBooking
 } from "../../services/adminService";
+
+/**
+ * Normalizes phone number for WhatsApp URL (ensures single 91 prefix)
+ */
+const getWaPhone = (phone = "") => {
+    let raw = phone.replace(/\D/g, "");
+    if (raw.length === 10) return `91${raw}`;
+    if (raw.length === 12 && raw.startsWith("91")) return raw;
+    return raw;
+};
 
 export default function B2BBookingDetailView({
     booking,
@@ -15,8 +24,6 @@ export default function B2BBookingDetailView({
 }) {
     const [saving, setSaving] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentForm, setPaymentForm] = useState({ mode: "Cash", remarks: "" });
 
     const [assignForm, setAssignForm] = useState({
         driverName: booking.assignments?.[0]?.driver_name || "",
@@ -66,29 +73,19 @@ export default function B2BBookingDetailView({
         if (result.success) onUpdate?.();
     };
 
-    const handleMarkPaid = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        const result = await markB2BBillPaid(booking.id, paymentForm);
-        setSaving(false);
-        if (result.success) {
-            setShowPaymentModal(false);
-            onUpdate?.();
-        } else {
-            alert(result.message || "Failed to mark paid");
-        }
-    };
-
     const getStatusColor = (status) => {
         switch (status) {
             case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
-            case 'PAID': return 'bg-purple-100 text-purple-700 border-purple-200';
-            case 'READY': return 'bg-purple-100 text-purple-700 border-purple-200';
-            case 'IN_PROGRESS': return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'READY': return 'bg-blue-100 text-blue-700 border-blue-200';
             default: return 'bg-amber-100 text-amber-700 border-amber-200';
         }
     };
+
+    const rawPhone = booking.passenger_details?.phone || 
+                   booking.bookedByUser?.phone || 
+                   booking.company?.company_phone || "";
 
     return (
         <>
@@ -143,11 +140,11 @@ export default function B2BBookingDetailView({
                     {/* Financial Summary */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Fare</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Trip Fare</span>
                             <p className="text-xl font-black text-slate-900">₹{booking.total_amount || 0}</p>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Distance</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Est. Distance</span>
                             <p className="text-xl font-black text-slate-900">{booking.distance_km} km</p>
                         </div>
                     </div>
@@ -169,30 +166,24 @@ export default function B2BBookingDetailView({
                                 Complete Entry ✅
                             </button>
                         )}
-                        {booking.status === "COMPLETED" && booking.payment_status !== "PAID" && (
-                            <button onClick={() => setShowPaymentModal(true)} className="w-full py-3.5 bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-200">
-                                Financial Resolution 💰
-                            </button>
-                        )}
 
                         {/* WhatsApp Quick Actions */}
                         {booking.assignments?.[0] && (
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200">
                                 <button
                                     onClick={() => {
-                                        const phone = (booking.passenger_details?.phone || "").replace(/\D/g, "");
+                                        const phone = getWaPhone(rawPhone);
                                         const taxi = booking.assignments[0];
                                         const msg = encodeURIComponent(
-                                            `🏢 *UrbanCabz Corporate*\n\n` +
-                                            `Booking ID: #${booking.id}\n` +
-                                            `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
-                                            `👤 Driver: ${taxi.driver_name}\n` +
-                                            `📞 Driver: ${taxi.driver_number}\n` +
-                                            `📍 Pickup: ${booking.pickup_location}\n` +
-                                            `🏁 Drop: ${booking.drop_location}\n\n` +
-                                            `Thank you for choosing UrbanCabz! 🙏`
+                                            `*Urban Cabz - Booking Details* 🚖\n\n` +
+                                            `Greetings, your ride for Booking *#${booking.id}* has been confirmed.\n\n` +
+                                            `*Vehicle:* ${taxi.cab_name} (${taxi.cab_number})\n` +
+                                            `*Chauffeur:* ${taxi.driver_name} (${taxi.driver_number})\n\n` +
+                                            `*Trip:* ${booking.pickup_location} ➜ ${booking.drop_location}\n` +
+                                            `*Pickup Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
+                                            `Thank you for choosing Urban Cabz. Have a safe journey!`
                                         );
-                                        window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                        window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                     }}
                                     className="py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                                 >
@@ -201,18 +192,19 @@ export default function B2BBookingDetailView({
                                 <button
                                     onClick={() => {
                                         const taxi = booking.assignments[0];
-                                        const phone = (taxi.driver_number || "").replace(/\D/g, "");
+                                        const phone = getWaPhone(taxi.driver_number);
+
                                         const msg = encodeURIComponent(
-                                            `🏢 *UrbanCabz Corporate Pickup*\n\n` +
-                                            `Booking ID: #${booking.id}\n` +
-                                            `👤 Passenger: ${booking.passenger_details?.name || "Employee"}\n` +
-                                            `📞 Passenger: ${booking.passenger_details?.phone}\n` +
-                                            `📍 Pickup: ${booking.pickup_location}\n` +
-                                            `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📏 Distance: ${booking.distance_km} km\n\n` +
-                                            `Please reach on time. 🙏`
+                                            `*Urban Cabz - Trip Assignment* 🚨\n\n` +
+                                            `New trip assigned for Booking *#${booking.id}*.\n\n` +
+                                            `*Customer:* ${booking.passenger_details?.name || "Employee"}\n` +
+                                            `*Contact:* ${booking.passenger_details?.phone}\n\n` +
+                                            `*Pickup:* ${booking.pickup_location}\n` +
+                                            `*Drop:* ${booking.drop_location}\n` +
+                                            `*Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
+                                            `Please ensure a timely pickup. Drive safely.`
                                         );
-                                        window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                        window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                     }}
                                     className="py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                                 >
@@ -264,38 +256,6 @@ export default function B2BBookingDetailView({
 
                                 <button type="submit" disabled={saving} className="w-full py-3.5 bg-purple-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all">
                                     {saving ? "Processing..." : "Assign & Confirm ✅"}
-                                </button>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Payment Modal */}
-            <AnimatePresence>
-                {showPaymentModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
-                            <div className="p-4 bg-amber-500 text-white flex justify-between items-center">
-                                <h3 className="text-base font-black tracking-tight">Financial Resolution 💰</h3>
-                                <button onClick={() => setShowPaymentModal(false)} className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-all font-bold">✕</button>
-                            </div>
-                            <form onSubmit={handleMarkPaid} className="p-5 space-y-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs uppercase font-bold text-slate-500 tracking-widest">Payment Method</label>
-                                    <select value={paymentForm.mode} onChange={e => setPaymentForm({ ...paymentForm, mode: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-amber-100 focus:border-amber-400 outline-none transition-all">
-                                        <option value="Cash">Cash</option>
-                                        <option value="Bank Transfer">NEFT/RTGS</option>
-                                        <option value="UPI">UPI / Digital</option>
-                                        <option value="Cheque">Corporate Cheque</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs uppercase font-bold text-slate-500 tracking-widest">Transaction Notes</label>
-                                    <textarea value={paymentForm.remarks} onChange={e => setPaymentForm({ ...paymentForm, remarks: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-900 min-h-[80px] focus:ring-2 focus:ring-amber-100 focus:border-amber-400 outline-none transition-all placeholder-slate-400" placeholder="Optional notes..." />
-                                </div>
-                                <button type="submit" disabled={saving} className="w-full py-3.5 bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-200">
-                                    {saving ? "Saving..." : "Clear Outstanding ✅"}
                                 </button>
                             </form>
                         </motion.div>

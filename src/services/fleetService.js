@@ -1,213 +1,76 @@
-const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
-
-function getAuthToken() {
-    const userType = localStorage.getItem("userType");
-    if (userType === "admin") {
-        return localStorage.getItem("adminToken");
-    } else if (userType === "customer") {
-        return localStorage.getItem("customerToken");
-    } else if (userType === "business") {
-        return localStorage.getItem("businessToken");
-    }
-    return (
-        localStorage.getItem("adminToken") ||
-        localStorage.getItem("customerToken") ||
-        localStorage.getItem("businessToken")
-    );
-}
-
-function buildAuthHeaders() {
-    const token = getAuthToken();
-    const headers = {
-        "Content-Type": "application/json",
-    };
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-}
+// src/services/fleetService.js
+import { apiClient } from "./apiClient";
 
 /**
  * Fetch all fleet vehicles (public endpoint)
  */
 export async function fetchPublicFleet() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleet/public?activeOnly=true`, {
-            method: "GET",
-            headers: buildAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to fetch vehicles" };
-        }
-        return { success: true, data: data.data };
-    } catch (error) {
-        console.error("Error fetching public fleet:", error);
-        return { success: false, message: "Network error while fetching vehicles" };
-    }
+    return apiClient.get("/fleet/public", { params: { activeOnly: "true" } });
 }
-
-let pricingSettingsPromise = null;
 
 /**
  * Fetch global pricing settings
  */
 export function fetchPricingSettings() {
-    if (pricingSettingsPromise) {
-        return pricingSettingsPromise;
-    }
-
-    pricingSettingsPromise = (async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/pricing/public`, {
-                method: "GET",
-                headers: buildAuthHeaders(),
-            });
-            const data = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                pricingSettingsPromise = null; // Reset on error so next time it retries
-                return { success: false, message: data.message || "Failed to fetch settings" };
-            }
-
-            return { success: true, data: data.data };
-        } catch (error) {
-            console.error("Error fetching pricing settings:", error);
-            pricingSettingsPromise = null; // Reset on error so next time it retries
-            return { success: false, message: "Network error while fetching settings" };
-        }
-    })();
-
-    return pricingSettingsPromise;
+    // This is the one specifically mentioned by the user.
+    // apiClient.get handles deduplication and brief caching automatically.
+    return apiClient.get("/pricing/public");
 }
 
+/**
+ * Fetch global pricing settings (admin view)
+ */
+export async function fetchAdminPricingSettings() {
+    return apiClient.get("/pricing");
+}
+
+/**
+ * Update global pricing settings (admin)
+ */
+export async function updatePricingSettings(settings) {
+    return apiClient.put("/pricing", settings);
+}
 
 /**
  * Fetch all fleet vehicles (admin endpoint)
  */
 export async function fetchFleetVehicles() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleet`, {
-            method: "GET",
-            headers: buildAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to fetch vehicles" };
-        }
-        return { success: true, data: data.data };
-    } catch (error) {
-        console.error("Error fetching fleet:", error);
-        return { success: false, message: "Network error while fetching vehicles" };
-    }
+    return apiClient.get("/fleet");
 }
 
 /**
  * Create a new fleet vehicle
  */
 export async function createFleetVehicle(vehicleData) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleet`, {
-            method: "POST",
-            headers: buildAuthHeaders(),
-            body: JSON.stringify(vehicleData),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to create vehicle" };
-        }
-        return { success: true, data: data.data, message: data.message };
-    } catch (error) {
-        console.error("Error creating vehicle:", error);
-        return { success: false, message: "Network error while creating vehicle" };
-    }
+    return apiClient.post("/fleet", vehicleData);
 }
 
 /**
  * Update a fleet vehicle
  */
 export async function updateFleetVehicle(id, vehicleData) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleet/${id}`, {
-            method: "PUT",
-            headers: buildAuthHeaders(),
-            body: JSON.stringify(vehicleData),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to update vehicle" };
-        }
-        return { success: true, data: data.data, message: data.message };
-    } catch (error) {
-        console.error("Error updating vehicle:", error);
-        return { success: false, message: "Network error while updating vehicle" };
-    }
+    return apiClient.put(`/fleet/${id}`, vehicleData);
 }
 
 /**
  * Delete (deactivate) a fleet vehicle
  */
 export async function deleteFleetVehicle(id) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/fleet/${id}`, {
-            method: "DELETE",
-            headers: buildAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to delete vehicle" };
-        }
-        return { success: true, message: data.message };
-    } catch (error) {
-        console.error("Error deleting vehicle:", error);
-        return { success: false, message: "Network error while deleting vehicle" };
-    }
+    return apiClient.delete(`/fleet/${id}`);
 }
 
 /**
  * Fetch fleet assigned to the current user's company (B2B)
  */
 export async function fetchMyFleet() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/b2b/my-fleet`, {
-            method: "GET",
-            headers: buildAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to fetch company fleet" };
-        }
-        return { success: true, data: data.data };
-    } catch (error) {
-        console.error("Error fetching company fleet:", error);
-        return { success: false, message: "Network error while fetching company fleet" };
-    }
+    return apiClient.get("/b2b/my-fleet");
 }
 
 /**
  * Upload a fleet vehicle image
  */
 export async function uploadFleetImage(file) {
-    try {
-        const token = getAuthToken();
-        const formData = new FormData();
-        formData.append("image", file);
-
-        const response = await fetch(`${API_BASE_URL}/fleet/upload-image`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return { success: false, message: data.message || "Failed to upload image" };
-        }
-        return { success: true, data: data.data, message: data.message };
-    } catch (error) {
-        console.error("Error uploading image:", error);
-        return { success: false, message: "Network error while uploading image" };
-    }
+    const formData = new FormData();
+    formData.append("image", file);
+    return apiClient.upload("/fleet/upload-image", formData);
 }

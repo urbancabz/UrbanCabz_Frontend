@@ -2,12 +2,18 @@ import React from "react";
 import { motion } from "framer-motion";
 
 export default function AdminStats({ summary = {} }) {
-    const { total = 0, paidCount = 0, readyToAssign = 0, pendingPayment = 0 } = summary;
+    // Map backend stat names to frontend labels
+    const { 
+        totalBookings = 0, 
+        completedBookings = 0, 
+        readyToAssign = 0, 
+        b2bBookings = 0 
+    } = summary;
 
     const stats = [
         {
             label: "Total Bookings",
-            value: total,
+            value: totalBookings,
             bgColor: "bg-white",
             borderColor: "border-slate-200",
             textColor: "text-slate-700",
@@ -19,8 +25,8 @@ export default function AdminStats({ summary = {} }) {
             ),
         },
         {
-            label: "Confirmed (Paid)",
-            value: paidCount,
+            label: "Completed Rides",
+            value: completedBookings,
             bgColor: "bg-emerald-50",
             borderColor: "border-emerald-200",
             textColor: "text-emerald-700",
@@ -33,7 +39,7 @@ export default function AdminStats({ summary = {} }) {
             ),
         },
         {
-            label: "Action Needed",
+            label: "Pending Dispatch",
             value: readyToAssign,
             bgColor: "bg-blue-50",
             borderColor: "border-blue-200",
@@ -47,15 +53,15 @@ export default function AdminStats({ summary = {} }) {
             ),
         },
         {
-            label: "Pending Payment",
-            value: pendingPayment,
-            bgColor: "bg-amber-50",
-            borderColor: "border-amber-200",
-            textColor: "text-amber-700",
-            labelColor: "text-amber-600",
+            label: "Corporate (B2B)",
+            value: b2bBookings,
+            bgColor: "bg-purple-50",
+            borderColor: "border-purple-200",
+            textColor: "text-purple-700",
+            labelColor: "text-purple-600",
             icon: (
                 <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
             ),
         },
@@ -85,7 +91,7 @@ export default function AdminStats({ summary = {} }) {
                             <span className={`text-3xl font-extrabold tracking-tight ${stat.textColor}`}>
                                 {stat.value}
                             </span>
-                            {stat.value > 0 && stat.label === "Action Needed" && (
+                            {stat.value > 0 && stat.label === "Pending Dispatch" && (
                                 <span className="flex h-2 w-2 relative">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>

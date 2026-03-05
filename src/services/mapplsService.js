@@ -1,53 +1,14 @@
 // src/services/mapplsService.js
+
+const getBaseUrl = () => import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050/api/v1';
+
 const MapplsService = {
-  accessToken: null,
-  tokenExpiry: null,
-
-  // Get authentication token
-  async getAccessToken() {
-    if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    const clientId = import.meta.env.VITE_MAPPLS_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_MAPPLS_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-      throw new Error('Mappls credentials not found');
-    }
-
-    try {
-      const response = await fetch('https://outpost.mappls.com/api/security/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
-      });
-
-      if (!response.ok) throw new Error('Failed to get access token');
-
-      const data = await response.json();
-      this.accessToken = data.access_token;
-      this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000;
-
-      return this.accessToken;
-    } catch (error) {
-      console.error('Mappls auth error:', error);
-      throw error;
-    }
-  },
-
-  // Geocode location
+  // Geocode location (address to coordinates)
   async geocodeLocation(address) {
     try {
-      const token = await this.getAccessToken();
-
+      const baseUrl = getBaseUrl();
       const response = await fetch(
-        `https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(address)}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
+        `${baseUrl}/mappls/geocode?address=${encodeURIComponent(address)}`
       );
 
       if (!response.ok) throw new Error('Geocoding failed');
@@ -70,18 +31,55 @@ const MapplsService = {
     }
   },
 
+  // Reverse Geocode (coordinates to address)
+  async reverseGeocode(lat, lng) {
+    try {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(
+        `${baseUrl}/mappls/rev_geocode?lat=${lat}&lng=${lng}`
+      );
+
+      if (!response.ok) throw new Error('Reverse geocoding failed');
+
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+
+        // Format a shorter, readable address similar to Nominatim parsing
+        const components = [
+          result.poi,
+          result.street || result.subLocality || result.locality,
+          result.city || result.district,
+          result.state
+        ].filter(Boolean);
+
+        const shortAddress = components.join(', ');
+
+        return {
+          formattedAddress: result.formatted_address || shortAddress,
+          shortAddress: shortAddress,
+          components: result
+        };
+      }
+
+      throw new Error('No results found for coordinates');
+    } catch (error) {
+      console.error('Mappls reverse geocoding error:', error);
+      throw error;
+    }
+  },
+
   // Calculate distance and duration
   async getDistanceAndDuration(fromAddress, toAddress) {
     try {
-      const token = await this.getAccessToken();
       const fromCoords = await this.geocodeLocation(fromAddress);
       const toCoords = await this.geocodeLocation(toAddress);
 
+      const baseUrl = getBaseUrl();
+      const coordsString = `${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}`;
       const response = await fetch(
-        `https://apis.mappls.com/advancedmaps/v1/${import.meta.env.VITE_MAPPLS_CLIENT_ID}/distance_matrix/driving/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?rtype=0&region=ind`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
+        `${baseUrl}/mappls/distance_matrix/${coordsString}`
       );
 
       if (!response.ok) throw new Error('Distance calculation failed');
@@ -121,15 +119,9 @@ const MapplsService = {
     if (!query || query.length < 2) return [];
 
     try {
-      const token = await this.getAccessToken();
+      const baseUrl = getBaseUrl();
       const response = await fetch(
-        `https://atlas.mappls.com/api/places/autosuggest?query=${encodeURIComponent(query)}&region=ind&tokenizeAddress=true&pod=CITY,VILLAGE,LOCALITY,SUB_LOCALITY,POI`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-        }
+        `${baseUrl}/mappls/autosuggest?query=${encodeURIComponent(query)}`
       );
 
       if (!response.ok) return [];
@@ -137,13 +129,23 @@ const MapplsService = {
       const data = await response.json();
 
       if (data.suggestedLocations && data.suggestedLocations.length > 0) {
-        return data.suggestedLocations.map(item => ({
-          label: item.placeName + (item.placeAddress ? `, ${item.placeAddress}` : ""),
-          lat: parseFloat(item.latitude),
-          lon: parseFloat(item.longitude),
-          display_name: item.placeAddress,
-          source: 'mappls'
-        }));
+        return data.suggestedLocations.map(item => {
+          const placeName = item.placeName || '';
+          const placeAddress = item.placeAddress || '';
+
+          // Build a clean label: "Place Name, Locality, City" (avoid repeating placeName in address)
+          const label = placeAddress && placeAddress !== placeName
+            ? `${placeName}, ${placeAddress}`
+            : placeName;
+
+          return {
+            label,
+            lat: parseFloat(item.latitude || item.lat || 0),
+            lon: parseFloat(item.longitude || item.lng || 0),
+            display_name: placeAddress || placeName,
+            source: 'nominatim'
+          };
+        }).filter(item => item.lat !== 0 && item.lon !== 0);
       }
 
       return [];

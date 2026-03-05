@@ -14,7 +14,7 @@ export default function BusinessBookRide() {
     const [searchData, setSearchData] = useState(null);
     const [fleet, setFleet] = useState([]);
     const [loadingFleet, setLoadingFleet] = useState(false);
-    const [distanceKm, setDistanceKm] = useState(null);
+    const [distanceKm, setDistanceKm] = useState(location.state?.distanceKm || null);
     const [pricingSettings, setPricingSettings] = useState(null);
 
     // If we navigated here with state (e.g. from Input component redirecting us back), 
@@ -22,13 +22,25 @@ export default function BusinessBookRide() {
     useEffect(() => {
         if (location.state && location.state.from && location.state.to) {
             setSearchData(location.state);
+
+            // If we have prefetched data, use it immediately
+            if (location.state.prefetchedFleet && location.state.prefetchedPricing) {
+                setFleet(location.state.prefetchedFleet);
+                setPricingSettings(location.state.prefetchedPricing);
+            }
+
             setStep("select_vehicle");
         }
     }, [location.state]);
 
-    // Fetch real fleet data & Pricing Settings
+    // Fetch real fleet data & Pricing Settings (only if not prefetched)
     useEffect(() => {
         if (step === "select_vehicle") {
+            // Only fetch if we don't already have the data from prefetch
+            if (fleet.length > 0 && pricingSettings) {
+                return;
+            }
+
             const loadData = async () => {
                 setLoadingFleet(true);
                 try {
@@ -54,7 +66,7 @@ export default function BusinessBookRide() {
             };
             loadData();
         }
-    }, [step]);
+    }, [step, fleet.length, pricingSettings]);
 
     const handleDistanceCalculated = (metrics) => {
         if (metrics && metrics.distanceKm) {
@@ -132,9 +144,10 @@ export default function BusinessBookRide() {
                             ) : (
                                 fleet.map(vehicle => {
                                     const rate = vehicle.base_price_per_km || vehicle.basePrice || 13;
+                                    const airportBasePrice = vehicle.base_price_airport || 0;
                                     const dist = distanceKm || searchData.distanceKm || 0;
 
-                                    let billableDistance = dist;
+                                    let finalPrice = 0;
                                     const RULE_MIN_KM = 300;
 
                                     if (pricingSettings) {
@@ -142,26 +155,51 @@ export default function BusinessBookRide() {
                                             min_km_threshold,
                                             min_km_airport_apply,
                                             min_km_oneway_apply,
-                                            min_km_roundtrip_apply
                                         } = pricingSettings;
 
-                                        // For business, we might want a specific rideType or use 'corporate'
-                                        // But usually corporate trips follow 'oneway' or 'airport' logic
-                                        const isAirport = searchData.from?.toLowerCase().includes("airport") || searchData.to?.toLowerCase().includes("airport");
-                                        const rideType = isAirport ? "airport" : "oneway";
+                                        // Use rideType from searchData (where it's set by Input component)
+                                        const isAirportFromText = searchData.from?.toLowerCase().includes("airport") || searchData.to?.toLowerCase().includes("airport");
+                                        const rideType = searchData.rideType || (isAirportFromText ? "airport" : "oneway");
 
-                                        let applyRule = false;
-                                        if (dist > min_km_threshold) {
-                                            if (rideType === "airport" && min_km_airport_apply) applyRule = true;
-                                            else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
-                                        }
+                                        // For round trips, total distance is double the one-way distance
+                                        // (only used for display, threshold only applies to airport)
+                                        const { min_km_roundtrip_apply } = pricingSettings;
 
-                                        if (applyRule) {
-                                            billableDistance = Math.max(RULE_MIN_KM, dist);
+                                        if (rideType === "airport" && airportBasePrice > 0) {
+                                            const totalTripDistance = dist; // airport is always one-way distance
+                                            if (totalTripDistance > min_km_threshold) {
+                                                if (min_km_airport_apply) {
+                                                    finalPrice = Math.round(Math.max(RULE_MIN_KM, dist) * rate);
+                                                } else {
+                                                    const extraKm = totalTripDistance - min_km_threshold;
+                                                    finalPrice = Math.round(airportBasePrice + extraKm * rate);
+                                                }
+                                            } else {
+                                                finalPrice = Math.round(airportBasePrice);
+                                            }
+                                        } else if (rideType === "roundtrip") {
+                                            // Round-trip logic for business
+                                            let days = 1;
+                                            if (searchData.pickupDate && searchData.returnDate) {
+                                                const start = new Date(searchData.pickupDate);
+                                                const end = new Date(searchData.returnDate);
+                                                const diffTime = Math.abs(end - start);
+                                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                days = diffDays + 1;
+                                            }
+
+                                            const effectiveRoundTripMinKmPerDay = min_km_roundtrip_apply ? RULE_MIN_KM : 0;
+                                            const baseKm = days * effectiveRoundTripMinKmPerDay;
+                                            const actualKm = dist * 2;
+                                            finalPrice = Math.round(Math.max(baseKm, actualKm) * rate);
+                                        } else {
+                                            // Standard Oneway logic: pay for AT LEAST 300km if toggle is ON
+                                            const effectiveMinKm = min_km_oneway_apply ? RULE_MIN_KM : 0;
+                                            finalPrice = Math.round(Math.max(effectiveMinKm, dist) * rate);
                                         }
+                                    } else {
+                                        finalPrice = Math.round(dist * rate);
                                     }
-
-                                    const finalPrice = Math.round(billableDistance * rate);
                                     return (
                                         <div key={vehicle.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 hover:border-yellow-500/50 transition-all">
                                             <div className="w-full sm:w-48 h-32 bg-neutral-800 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center">
@@ -226,6 +264,7 @@ export default function BusinessBookRide() {
                                     pickupDate={searchData.pickupDate}
                                     pickupTime={searchData.pickupTime}
                                     onDistanceCalculated={handleDistanceCalculated}
+                                    initialMetrics={location.state?.prefetchedMetrics}
                                     isDark={true}
                                 />
                                 <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-2xl">

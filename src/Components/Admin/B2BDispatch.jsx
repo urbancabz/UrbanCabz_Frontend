@@ -20,6 +20,16 @@ const getStatusColor = (status) => {
     }
 };
 
+/**
+ * Normalizes phone number for WhatsApp URL (ensures single 91 prefix)
+ */
+const getWaPhone = (phone = "") => {
+    let raw = phone.replace(/\D/g, "");
+    if (raw.length === 10) return `91${raw}`;
+    if (raw.length === 12 && raw.startsWith("91")) return raw;
+    return raw;
+};
+
 export default function B2BDispatch() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -202,8 +212,8 @@ export default function B2BDispatch() {
                     >
                         <div className="p-5 bg-slate-900 text-white flex justify-between items-center">
                             <div>
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-0.5">Corporate Focus</span>
-                                <h4 className="text-sm font-black tracking-tight">Booking #{selectedBooking.id}</h4>
+                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-0.5">Corporate Focus</span>
+                                <h4 className="text-sm font-bold tracking-tight">Booking #{selectedBooking.id}</h4>
                             </div>
                             <button onClick={() => setSelectedBooking(null)} className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all font-bold">✕</button>
                         </div>
@@ -213,31 +223,31 @@ export default function B2BDispatch() {
                                 <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-lg shadow-sm">🏢</div>
                                     <div className="min-w-0">
-                                        <p className="text-xs font-black text-slate-900 truncate leading-none mb-1">{selectedBooking.company?.company_name}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{selectedBooking.passenger_details?.name} ({selectedBooking.passenger_details?.phone})</p>
+                                        <p className="text-xs font-bold text-slate-900 truncate leading-none mb-1">{selectedBooking.company?.company_name}</p>
+                                        <p className="text-[10px] font-medium text-slate-500 font-mono tracking-tighter">{selectedBooking.passenger_details?.name} ({selectedBooking.passenger_details?.phone})</p>
                                     </div>
                                 </div>
 
                                 <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 space-y-3">
                                     <div className="flex items-start gap-2.5">
                                         <div className="mt-1.5 min-w-[6px] h-[6px] rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
-                                        <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{selectedBooking.pickup_location}</p>
+                                        <p className="text-[10px] font-semibold text-slate-700 leading-snug line-clamp-2">{selectedBooking.pickup_location}</p>
                                     </div>
                                     <div className="flex items-start gap-2.5">
                                         <div className="mt-1.5 min-w-[6px] h-[6px] rounded-full bg-rose-500 ring-4 ring-rose-100"></div>
-                                        <p className="text-[10px] font-black text-slate-700 leading-snug line-clamp-2">{selectedBooking.drop_location}</p>
+                                        <p className="text-[10px] font-semibold text-slate-700 leading-snug line-clamp-2">{selectedBooking.drop_location}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between px-1">
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Financial</span>
-                                    <div className="text-[10px] font-black text-slate-900">₹{selectedBooking.total_amount}</div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Financial</span>
+                                    <div className="text-[10px] font-bold text-slate-900">₹{selectedBooking.total_amount}</div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</span>
-                                    <div className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${getStatusColor(selectedBooking.status)}`}>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</span>
+                                    <div className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${getStatusColor(selectedBooking.status)}`}>
                                         {selectedBooking.status}
                                     </div>
                                 </div>
@@ -245,71 +255,67 @@ export default function B2BDispatch() {
 
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
                                 {selectedBooking.status === "CONFIRMED" && (
-                                    <button onClick={() => setShowAssignModal(true)} className="col-span-2 py-3.5 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                                    <button onClick={() => setShowAssignModal(true)} className="col-span-2 py-3 bg-indigo-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
                                         {selectedBooking.taxi_assign_status === "ASSIGNED" ? "Update Driver 🚕" : "Dispatch Driver 🚕"}
                                     </button>
                                 )}
                                 {selectedBooking.taxi_assign_status === "ASSIGNED" && selectedBooking.status === "CONFIRMED" && (
-                                    <button onClick={handleStartTrip} disabled={saving} className="col-span-2 py-3.5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+                                    <button onClick={handleStartTrip} disabled={saving} className="col-span-2 py-3 bg-emerald-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
                                         Start Expedition
                                     </button>
                                 )}
                                 {selectedBooking.status === "IN_PROGRESS" && (
-                                    <button onClick={handleCompleteTrip} disabled={saving} className="col-span-2 py-3.5 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-600/20">
+                                    <button onClick={handleCompleteTrip} disabled={saving} className="col-span-2 py-3 bg-blue-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-600/20">
                                         Complete Entry
                                     </button>
                                 )}
-                                <button onClick={handleCancelBooking} className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all">Cancel</button>
-                                <button onClick={() => setSelectedBooking(null)} className="py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Minimize</button>
+                                <button onClick={handleCancelBooking} className="py-2.5 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all">Cancel</button>
+                                <button onClick={() => setSelectedBooking(null)} className="py-2.5 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all">Minimize</button>
 
                                 {/* Quick WhatsApp Actions (Post-Assignment) */}
                                 {selectedBooking.assignments?.[0] && (
                                     <div className="col-span-2 grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-slate-100">
                                         <button
                                             onClick={() => {
-                                                const phone = (selectedBooking.passenger_details?.phone || "").replace(/\D/g, "");
+                                                const rawPhone = selectedBooking.passenger_details?.phone || 
+                                                               selectedBooking.bookedByUser?.phone || 
+                                                               selectedBooking.company?.company_phone || "";
+                                                const phone = getWaPhone(rawPhone);
                                                 const taxi = selectedBooking.assignments[0];
+                                                
                                                 const msg = encodeURIComponent(
-                                                    `🏢 *UrbanCabz Corporate Booking*\n\n` +
-                                                    `Booking ID: #${selectedBooking.id}\n` +
-                                                    `Company: ${selectedBooking.company?.company_name}\n` +
-                                                    `---------------------\n` +
-                                                    `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
-                                                    `👤 Driver: ${taxi.driver_name}\n` +
-                                                    `📞 Driver Contact: ${taxi.driver_number}\n` +
-                                                    `---------------------\n` +
-                                                    `📍 Pickup: ${selectedBooking.pickup_location}\n` +
-                                                    `🏁 Drop: ${selectedBooking.drop_location}\n` +
-                                                    `📅 Pickup Time: ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString()}\n\n` +
-                                                    `Thank you for choosing UrbanCabz! 🙏`
+                                                    `*Urban Cabz - Booking Details* 🚖\n\n` +
+                                                    `Greetings, your ride for Booking *#${selectedBooking.id}* has been confirmed.\n\n` +
+                                                    `*Vehicle:* ${taxi.cab_name} (${taxi.cab_number})\n` +
+                                                    `*Chauffeur:* ${taxi.driver_name} (${taxi.driver_number})\n\n` +
+                                                    `*Trip:* ${selectedBooking.pickup_location} ➜ ${selectedBooking.drop_location}\n` +
+                                                    `*Pickup Time:* ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString('en-IN')}\n\n` +
+                                                    `Thank you for choosing Urban Cabz. Have a safe journey!`
                                                 );
-                                                window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                                window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                             }}
-                                            className="py-2.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                            className="py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[9px] font-bold uppercase flex items-center justify-center gap-1.5"
                                         >
                                             <span>📱</span> Client WA
                                         </button>
                                         <button
                                             onClick={() => {
                                                 const taxi = selectedBooking.assignments[0];
-                                                const phone = (taxi.driver_number || "").replace(/\D/g, "");
+                                                const phone = getWaPhone(taxi.driver_number);
+
                                                 const msg = encodeURIComponent(
-                                                    `🏢 *UrbanCabz Corporate Pickup*\n\n` +
-                                                    `Booking ID: #${selectedBooking.id}\n` +
-                                                    `Company: ${selectedBooking.company?.company_name}\n` +
-                                                    `---------------------\n` +
-                                                    `👤 Passenger: ${selectedBooking.passenger_details?.name || "Employee"}\n` +
-                                                    `📞 Passenger Contact: ${selectedBooking.passenger_details?.phone}\n` +
-                                                    `---------------------\n` +
-                                                    `📍 Pickup: ${selectedBooking.pickup_location}\n` +
-                                                    `🏁 Drop: ${selectedBooking.drop_location}\n` +
-                                                    `📅 Pickup Time: ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString()}\n` +
-                                                    `📏 Distance: ${selectedBooking.distance_km} km\n\n` +
-                                                    `Please reach the pickup location on time. 🙏`
+                                                    `*Urban Cabz - Trip Assignment* 🚨\n\n` +
+                                                    `New trip assigned for Booking *#${selectedBooking.id}*.\n\n` +
+                                                    `*Customer:* ${selectedBooking.passenger_details?.name || "Employee"}\n` +
+                                                    `*Contact:* ${selectedBooking.passenger_details?.phone}\n\n` +
+                                                    `*Pickup:* ${selectedBooking.pickup_location}\n` +
+                                                    `*Drop:* ${selectedBooking.drop_location}\n` +
+                                                    `*Time:* ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString('en-IN')}\n\n` +
+                                                    `Please ensure a timely pickup. Drive safely.`
                                                 );
-                                                window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                                window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                             }}
-                                            className="py-2.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-1.5"
+                                            className="py-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-[9px] font-bold uppercase flex items-center justify-center gap-1.5"
                                         >
                                             <span>📱</span> Driver WA
                                         </button>
@@ -324,7 +330,7 @@ export default function B2BDispatch() {
             {/* Header & Stats Summary */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Corporate Dispatch</h2>
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Corporate Dispatch</h2>
                     <p className="text-slate-500 font-medium">Manage enterprise bookings and fleet allocation</p>
                 </div>
 
@@ -344,9 +350,9 @@ export default function B2BDispatch() {
                         >
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="text-lg">{stat.icon}</span>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
                             </div>
-                            <div className={`text-xl font-black text-slate-900 tracking-tight leading-none`}>
+                            <div className={`text-xl font-bold text-slate-900 tracking-tight leading-none`}>
                                 {stat.value}
                             </div>
                         </motion.div>
@@ -361,7 +367,7 @@ export default function B2BDispatch() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {tab.label}
                         </button>
@@ -384,7 +390,7 @@ export default function B2BDispatch() {
                 <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 transition-all w-full md:w-auto"
+                    className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 transition-all w-full md:w-auto"
                 >
                     <option value="all">📅 Full History</option>
                     {monthOptions.map(m => <option key={m} value={m}>{formatMonthLabel(m)}</option>)}
@@ -394,7 +400,7 @@ export default function B2BDispatch() {
             {/* Dispatch List */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Dispatch Queue</h3>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Dispatch Queue</h3>
                     <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span className="text-[10px] font-bold text-slate-400 uppercase">Live Queue</span>
@@ -405,7 +411,7 @@ export default function B2BDispatch() {
                     {filteredBookings.length === 0 ? (
                         <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl py-20 text-center">
                             <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🏢</div>
-                            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No entries matching criteria</p>
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No entries matching criteria</p>
                         </div>
                     ) : (
                         filteredBookings.map((booking, idx) => (
@@ -419,18 +425,18 @@ export default function B2BDispatch() {
                             >
                                 <div className="flex flex-wrap items-center gap-6">
                                     <div className="w-24">
-                                        <span className="block text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">#{booking.id}</span>
-                                        <div className="text-xs font-black text-slate-900 truncate">
+                                        <span className="block text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">#{booking.id}</span>
+                                        <div className="text-xs font-bold text-slate-900 truncate">
                                             {booking.company?.company_name || booking.b2b_company?.name || "Corporate"}
                                         </div>
                                     </div>
 
                                     <div className="w-32">
-                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Departure</span>
+                                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Departure</span>
                                         <div className="text-xs font-bold text-slate-700">
                                             {new Date(booking.scheduled_at || booking.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
-                                        <div className="text-[10px] text-slate-400 font-bold font-mono">
+                                        <div className="text-[10px] text-slate-400 font-medium font-mono">
                                             {new Date(booking.scheduled_at || booking.created_at).toLocaleDateString([], { day: '2-digit', month: 'short' })}
                                         </div>
                                     </div>
@@ -450,16 +456,16 @@ export default function B2BDispatch() {
                                     </div>
 
                                     <div className="w-44 text-right">
-                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Fare Breakdown</span>
-                                        <div className="text-sm font-black text-slate-900">₹{booking.total_amount}</div>
+                                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fare Breakdown</span>
+                                        <div className="text-sm font-bold text-slate-900">₹{booking.total_amount}</div>
                                         {booking.payment_status === 'PAID' ?
-                                            <span className="text-[9px] font-black text-emerald-600 uppercase">Settled</span> :
-                                            <span className="text-[9px] font-black text-amber-600 uppercase">Pending Billed</span>
+                                            <span className="text-[9px] font-bold text-emerald-600 uppercase">Settled</span> :
+                                            <span className="text-[9px] font-bold text-amber-600 uppercase">Pending Billed</span>
                                         }
                                     </div>
 
                                     <div className="flex items-center gap-4 ml-auto lg:ml-0">
-                                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border-2 shadow-sm ${getStatusColor(booking.status)}`}>
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border-2 shadow-sm ${getStatusColor(booking.status)}`}>
                                             {booking.status === "CONFIRMED" ? "● Ready" : booking.status}
                                         </span>
                                         <button
@@ -493,7 +499,7 @@ export default function B2BDispatch() {
                         >
                             <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
                                 <div>
-                                    <h3 className="text-xl font-black tracking-tight">Assign Dispatch 🚕</h3>
+                                    <h3 className="text-xl font-bold tracking-tight">Assign Dispatch 🚕</h3>
                                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1">Booking #{selectedBooking.id} • {selectedBooking.company?.company_name}</p>
                                 </div>
                                 <button onClick={() => setShowAssignModal(false)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all font-bold">✕</button>
@@ -502,19 +508,19 @@ export default function B2BDispatch() {
                             <form onSubmit={handleAssignSubmit} className="p-6 space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Driver Name</label>
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.1em]">Chauffeur Name</label>
                                         <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Enter name" value={assignForm.driverName} onChange={e => setAssignForm({ ...assignForm, driverName: e.target.value })} required />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Driver Phone</label>
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.1em]">Chauffeur Phone</label>
                                         <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Contact number" value={assignForm.driverNumber} onChange={e => setAssignForm({ ...assignForm, driverNumber: e.target.value })} required />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Vehicle Model</label>
-                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="e.g. Innova" value={assignForm.cabName} onChange={e => setAssignForm({ ...assignForm, cabName: e.target.value })} required />
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.1em]">Vehicle Model</label>
+                                        <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="e.g. Innova Hycross" value={assignForm.cabName} onChange={e => setAssignForm({ ...assignForm, cabName: e.target.value })} required />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.1em]">Vehicle Plate</label>
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.1em]">Vehicle Plate</label>
                                         <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Plate number" value={assignForm.cabNumber} onChange={e => setAssignForm({ ...assignForm, cabNumber: e.target.value })} required />
                                     </div>
                                 </div>
@@ -523,57 +529,52 @@ export default function B2BDispatch() {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const phone = (selectedBooking.passenger_details?.phone || "").replace(/\D/g, "");
+                                            const rawPhone = selectedBooking.passenger_details?.phone || 
+                                                           selectedBooking.bookedByUser?.phone || 
+                                                           selectedBooking.company?.company_phone || "";
+                                            const phone = getWaPhone(rawPhone);
+                                            
                                             const msg = encodeURIComponent(
-                                                `🏢 *UrbanCabz Corporate Booking*\n\n` +
-                                                `Booking ID: #${selectedBooking.id}\n` +
-                                                `Company: ${selectedBooking.company?.company_name}\n` +
-                                                `---------------------\n` +
-                                                `🚘 Vehicle: ${assignForm.cabName} (${assignForm.cabNumber})\n` +
-                                                `👤 Driver: ${assignForm.driverName}\n` +
-                                                `📞 Driver Contact: ${assignForm.driverNumber}\n` +
-                                                `---------------------\n` +
-                                                `📍 Pickup: ${selectedBooking.pickup_location}\n` +
-                                                `🏁 Drop: ${selectedBooking.drop_location}\n` +
-                                                `📅 Pickup Time: ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString()}\n\n` +
-                                                `Thank you for choosing UrbanCabz! 🙏`
+                                                `*Urban Cabz - Booking Details* 🚖\n\n` +
+                                                `Greetings, your ride for Booking *#${selectedBooking.id}* has been confirmed.\n\n` +
+                                                `*Vehicle:* ${assignForm.cabName} (${assignForm.cabNumber})\n` +
+                                                `*Chauffeur:* ${assignForm.driverName} (${assignForm.driverNumber})\n\n` +
+                                                `*Trip:* ${selectedBooking.pickup_location} ➜ ${selectedBooking.drop_location}\n` +
+                                                `*Pickup Time:* ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString('en-IN')}\n\n` +
+                                                `Thank you for choosing Urban Cabz. Have a safe journey!`
                                             );
-                                            window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                            window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                         }}
-                                        className="py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 flex items-center justify-center gap-2"
+                                        className="py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20"
                                     >
-                                        <span>📱</span> WhatsApp to Client
+                                        <span>📱</span> Notify Client
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const phone = (assignForm.driverNumber || "").replace(/\D/g, "");
+                                            const phone = getWaPhone(assignForm.driverNumber);
                                             const msg = encodeURIComponent(
-                                                `🏢 *UrbanCabz Corporate Pickup*\n\n` +
-                                                `Booking ID: #${selectedBooking.id}\n` +
-                                                `Company: ${selectedBooking.company?.company_name}\n` +
-                                                `---------------------\n` +
-                                                `👤 Passenger: ${selectedBooking.passenger_details?.name || "Employee"}\n` +
-                                                `📞 Passenger Contact: ${selectedBooking.passenger_details?.phone}\n` +
-                                                `---------------------\n` +
-                                                `📍 Pickup: ${selectedBooking.pickup_location}\n` +
-                                                `🏁 Drop: ${selectedBooking.drop_location}\n` +
-                                                `📅 Pickup Time: ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString()}\n` +
-                                                `📏 Distance: ${selectedBooking.distance_km} km\n\n` +
-                                                `Please reach the pickup location on time. 🙏`
+                                                `*Urban Cabz - Trip Assignment* 🚨\n\n` +
+                                                `New trip assigned for Booking *#${selectedBooking.id}*.\n\n` +
+                                                `*Customer:* ${selectedBooking.passenger_details?.name || "Employee"}\n` +
+                                                `*Contact:* ${selectedBooking.passenger_details?.phone}\n\n` +
+                                                `*Pickup:* ${selectedBooking.pickup_location}\n` +
+                                                `*Drop:* ${selectedBooking.drop_location}\n` +
+                                                `*Time:* ${new Date(selectedBooking.scheduled_at || selectedBooking.created_at).toLocaleString('en-IN')}\n\n` +
+                                                `Please ensure a timely pickup. Drive safely.`
                                             );
-                                            window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                            window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                                         }}
-                                        className="py-3 bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 flex items-center justify-center gap-2"
+                                        className="py-3 bg-blue-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/20"
                                     >
-                                        <span>📱</span> WhatsApp to Driver
+                                        <span>📱</span> Notify Driver
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="col-span-2 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-1 transition-all"
+                                        className="col-span-2 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"
                                     >
-                                        {saving ? "Processing..." : "Assign & Confirm"}
+                                        {saving ? "Processing..." : "Confirm Assignment"}
                                     </button>
                                 </div>
                             </form>
@@ -590,12 +591,12 @@ export default function B2BDispatch() {
                             className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200"
                         >
                             <div className="p-4 bg-amber-500 text-white flex justify-between items-center">
-                                <h3 className="text-sm font-black uppercase tracking-widest">Financial Resolution</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-widest">Financial Resolution</h3>
                                 <button onClick={() => setShowPaymentModal(false)}>✕</button>
                             </div>
                             <div className="p-6 space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-black text-slate-500">Method</label>
+                                    <label className="text-[10px] uppercase font-bold text-slate-500">Method</label>
                                     <select value={paymentForm.mode} onChange={e => setPaymentForm({ ...paymentForm, mode: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold">
                                         <option value="Cash">Cash</option>
                                         <option value="Bank Transfer">NEFT/RTGS</option>
@@ -604,10 +605,10 @@ export default function B2BDispatch() {
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] uppercase font-black text-slate-500">Transaction Notes</label>
+                                    <label className="text-[10px] uppercase font-bold text-slate-500">Transaction Notes</label>
                                     <textarea value={paymentForm.remarks} onChange={e => setPaymentForm({ ...paymentForm, remarks: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold min-h-[80px]" />
                                 </div>
-                                <button onClick={() => handleMarkPaid(paymentForm)} disabled={saving} className="w-full py-4 bg-amber-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-amber-500/20">
+                                <button onClick={() => handleMarkPaid(paymentForm)} disabled={saving} className="w-full py-4 bg-amber-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl shadow-amber-500/20">
                                     {saving ? "Saving..." : "Clear Outstanding"}
                                 </button>
                             </div>

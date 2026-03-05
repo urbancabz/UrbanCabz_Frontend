@@ -49,6 +49,21 @@ export default function CustomerManager({ users = [], onUpdate }) {
         }
     };
 
+    const filteredUsers = users.filter((user) => {
+        if (!searchTerm) return true;
+        const lowerTerm = searchTerm.toLowerCase();
+        return (
+            (user.name && user.name.toLowerCase().includes(lowerTerm)) ||
+            (user.email && user.email.toLowerCase().includes(lowerTerm)) ||
+            (user.phone && user.phone.toLowerCase().includes(lowerTerm))
+        );
+    });
+
+    const paginatedUsers = filteredUsers.slice(
+        (page - 1) * itemsPerPage,
+        page * itemsPerPage
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
@@ -81,7 +96,7 @@ export default function CustomerManager({ users = [], onUpdate }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {users.map(user => (
+                            {paginatedUsers.map(user => (
                                 <tr key={user.id} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -130,7 +145,7 @@ export default function CustomerManager({ users = [], onUpdate }) {
                                     </td>
                                 </tr>
                             ))}
-                            {users.length === 0 && (
+                            {filteredUsers.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="py-12 text-center text-slate-400 font-bold">No users found</td>
                                 </tr>
@@ -140,10 +155,10 @@ export default function CustomerManager({ users = [], onUpdate }) {
                 </div>
 
                 {/* Pagination */}
-                {users.length > itemsPerPage && (
+                {filteredUsers.length > itemsPerPage && (
                     <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
                         <p className="text-xs text-slate-500 font-medium">
-                            Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, users.length)} of {users.length} users
+                            Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
                         </p>
                         <div className="flex gap-2">
                             <button
@@ -154,7 +169,7 @@ export default function CustomerManager({ users = [], onUpdate }) {
                                 Previous
                             </button>
                             <button
-                                disabled={page >= Math.ceil(users.length / itemsPerPage)}
+                                disabled={page >= Math.ceil(filteredUsers.length / itemsPerPage)}
                                 onClick={() => setPage(p => p + 1)}
                                 className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >

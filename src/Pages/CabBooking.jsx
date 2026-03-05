@@ -15,13 +15,35 @@ export default function CabBooking() {
   const pickupTime = state?.pickupTime || "—";
   const rideType = state?.rideType || "airport";
 
-  const [distanceKm, setDistanceKm] = useState(null);
+  const [distanceKm, setDistanceKm] = useState(state?.distanceKm || null);
   const [activeListings, setActiveListings] = useState([]);
   const [pricingSettings, setPricingSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    loadData();
+    // Check if we have prefetched data to avoid loading state
+    if (state?.prefetchedFleet && state?.prefetchedPricing) {
+      setPricingSettings(state.prefetchedPricing);
+      const mapped = state.prefetchedFleet.map(v => ({
+        id: v.id,
+        name: v.name,
+        seats: v.seats,
+        bags: Math.floor(v.seats / 2),
+        basePrice: v.base_price_per_km,
+        airportBasePrice: v.base_price_airport,
+        airportKmIncluded: v.airport_km_included || 0,
+        tags: ["AC", "Comfortable", v.description],
+        rating: 4.8,
+        vehicleType: v.category,
+        image: v.image_url,
+      }));
+      setActiveListings(mapped);
+      setLoading(false);
+      // Still call loadData in background to refresh? 
+      // User said "totally ready" so let's skip background refresh to keep it instant
+    } else {
+      loadData();
+    }
   }, []);
 
   const loadData = async () => {
@@ -48,6 +70,8 @@ export default function CabBooking() {
           seats: v.seats,
           bags: Math.floor(v.seats / 2),
           basePrice: v.base_price_per_km,
+          airportBasePrice: v.base_price_airport,
+          airportKmIncluded: v.airport_km_included || 0,
           tags: ["AC", "Comfortable", v.description],
           rating: 4.8,
           vehicleType: v.category,
@@ -190,6 +214,7 @@ export default function CabBooking() {
               pickupDate={pickupDate}
               pickupTime={pickupTime}
               onDistanceCalculated={handleDistanceCalculated}
+              initialMetrics={state?.prefetchedMetrics}
             />
           </div>
         </div>

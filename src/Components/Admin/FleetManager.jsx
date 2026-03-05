@@ -22,6 +22,7 @@ export default function FleetManager({ fleet = [], onUpdate }) {
         name: "",
         seats: 4,
         base_price_per_km: 12,
+        base_price_airport: 0,
         category: "SEDAN",
         description: "",
         image_url: "",
@@ -33,6 +34,7 @@ export default function FleetManager({ fleet = [], onUpdate }) {
             name: "",
             seats: 4,
             base_price_per_km: 12,
+            base_price_airport: 0,
             category: "SEDAN",
             description: "",
             image_url: "",
@@ -49,6 +51,7 @@ export default function FleetManager({ fleet = [], onUpdate }) {
             name: vehicle.name,
             seats: vehicle.seats,
             base_price_per_km: vehicle.base_price_per_km,
+            base_price_airport: vehicle.base_price_airport || 0,
             category: vehicle.category,
             description: vehicle.description || "",
             image_url: vehicle.image_url || "",
@@ -200,6 +203,27 @@ export default function FleetManager({ fleet = [], onUpdate }) {
                                         required
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                                        Airport Base Fare (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="50"
+                                        value={form.base_price_airport}
+                                        onChange={(e) =>
+                                            setForm({
+                                                ...form,
+                                                base_price_airport: parseFloat(e.target.value),
+                                            })
+                                        }
+                                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                        min={0}
+                                        placeholder="e.g., 1200"
+                                        required
+                                    />
+                                    <p className="text-[10px] text-slate-400 mt-1 italic">Flat rate for airport transfers (pick/drop)</p>
+                                </div>
                             </div>
 
                             <div>
@@ -297,7 +321,7 @@ export default function FleetManager({ fleet = [], onUpdate }) {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {fleet.filter(v => v.is_active).map((vehicle) => (
+                    {fleet.map((vehicle) => (
                         <motion.div
                             key={vehicle.id}
                             layout
@@ -344,32 +368,40 @@ export default function FleetManager({ fleet = [], onUpdate }) {
                                 </p>
                             )}
 
-                            <div className="flex items-center justify-between text-sm border-t border-slate-100 pt-3 mt-3">
-                                <div className="flex gap-4">
-                                    <span className="text-slate-600">
-                                        <strong className="text-slate-900">{vehicle.seats}</strong>{" "}
-                                        Seats
-                                    </span>
-                                    <span className="text-slate-600">
-                                        <strong className="text-indigo-600">
-                                            ₹{vehicle.base_price_per_km}
-                                        </strong>
-                                        /km
-                                    </span>
+                            <div className="flex flex-col gap-2 text-sm border-t border-slate-100 pt-3 mt-3">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex gap-4">
+                                        <span className="text-slate-600">
+                                            <strong className="text-slate-900">{vehicle.seats}</strong>{" "}
+                                            Seats
+                                        </span>
+                                        <span className="text-slate-600">
+                                            <strong className="text-indigo-600">
+                                                ₹{vehicle.base_price_per_km}
+                                            </strong>
+                                            /km
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEdit(vehicle)}
+                                            className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-all"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(vehicle)}
+                                            className="text-xs px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition-all"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleEdit(vehicle)}
-                                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-all"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(vehicle)}
-                                        className="text-xs px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition-all"
-                                    >
-                                        Remove
-                                    </button>
+                                <div className="flex flex-col gap-2 bg-emerald-50 px-2 py-1.5 rounded border border-emerald-100">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase">Airport Fare:</span>
+                                        <strong className="text-emerald-700 text-xs">₹{vehicle.base_price_airport || 0}</strong>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>

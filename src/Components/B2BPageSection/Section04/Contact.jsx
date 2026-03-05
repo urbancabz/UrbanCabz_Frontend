@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { registerB2BRequest } from "../../../services/authService";
 
 export default function Contact() {
     const [formState, setFormState] = useState({
@@ -22,18 +23,8 @@ export default function Contact() {
         setSubmitStatus(null);
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
-            const response = await fetch(`${API_BASE_URL}/b2b/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formState),
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            const res = await registerB2BRequest(formState);
+            if (res.success) {
                 setSubmitStatus('success');
                 setFormState({
                     name: "",
@@ -44,7 +35,7 @@ export default function Contact() {
                 });
             } else {
                 setSubmitStatus('error');
-                console.error('Submission error:', data.message);
+                console.error('Submission error:', res.message);
             }
         } catch (error) {
             setSubmitStatus('error');

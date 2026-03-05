@@ -138,19 +138,10 @@ export default function BookingDetailView({
                     </div>
 
                     {/* Financial Summary */}
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Total</span>
-                            <p className="text-lg font-black text-slate-900">₹{total}</p>
-                        </div>
-                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block mb-0.5">Paid</span>
-                            <p className="text-lg font-black text-emerald-700">₹{paid}</p>
-                        </div>
-                        <div className={`p-3 rounded-xl border text-center ${due > 0 ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200"}`}>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest block mb-0.5 ${due > 0 ? "text-amber-600" : "text-slate-400"}`}>Due</span>
-                            <p className={`text-lg font-black ${due > 0 ? "text-amber-700" : "text-slate-400"}`}>₹{due}</p>
-                        </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Total Trip Fare</span>
+                        <p className="text-2xl font-black text-slate-900">₹{total}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter italic">Payable by Cash/UPI to Driver</p>
                     </div>
 
                     {/* Action Buttons */}
@@ -176,19 +167,31 @@ export default function BookingDetailView({
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200">
                                 <button
                                     onClick={() => {
-                                        const phone = (booking.user?.phone || "").replace(/\D/g, "");
+                                        // Normalizing phone number to avoid double 91
+                                        let rawPhone = (
+                                            booking.passenger_details?.phone || 
+                                            booking.user?.phone || 
+                                            ""
+                                        ).replace(/\D/g, "");
+                                        
+                                        // If it's 10 digits, prepend 91. If it already starts with 91 and is 12 digits, leave it.
+                                        if (rawPhone.length === 10) rawPhone = `91${rawPhone}`;
+                                        else if (rawPhone.length === 12 && rawPhone.startsWith("91")) { /* already correct */ }
+                                        else if (rawPhone.length > 10 && !rawPhone.startsWith("91")) {
+                                            // Optional: handle other cases if needed, but 91 is standard for this project
+                                        }
+
                                         const taxi = booking.assign_taxis[0];
                                         const msg = encodeURIComponent(
-                                            `🚕 *UrbanCabz Booking Details*\n\n` +
-                                            `Booking ID: #${booking.id}\n` +
-                                            `🚘 Vehicle: ${taxi.cab_name} (${taxi.cab_number})\n` +
-                                            `👤 Driver: ${taxi.driver_name}\n` +
-                                            `📞 Driver: ${taxi.driver_number}\n\n` +
-                                            `📍 Pickup: ${booking.pickup_location}\n` +
-                                            `🏁 Drop: ${booking.drop_location}\n\n` +
-                                            `Thank you for choosing UrbanCabz! 🙏`
+                                            `*Urban Cabz - Booking Details* 🚖\n\n` +
+                                            `Greetings, your ride for Booking *#${booking.id}* has been confirmed.\n\n` +
+                                            `*Vehicle:* ${taxi.cab_name} (${taxi.cab_number})\n` +
+                                            `*Chauffeur:* ${taxi.driver_name} (${taxi.driver_number})\n\n` +
+                                            `*Trip:* ${booking.pickup_location} ➜ ${booking.drop_location}\n` +
+                                            `*Pickup Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
+                                            `Thank you for choosing Urban Cabz. Have a safe journey!`
                                         );
-                                        window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                        window.open(`https://wa.me/${rawPhone}?text=${msg}`, "_blank");
                                     }}
                                     className="py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                                 >
@@ -197,18 +200,21 @@ export default function BookingDetailView({
                                 <button
                                     onClick={() => {
                                         const taxi = booking.assign_taxis[0];
-                                        const phone = (taxi.driver_number || "").replace(/\D/g, "");
+                                        let rawPhone = (taxi.driver_number || "").replace(/\D/g, "");
+                                        
+                                        if (rawPhone.length === 10) rawPhone = `91${rawPhone}`;
+
                                         const msg = encodeURIComponent(
-                                            `🚕 *UrbanCabz Trip Assignment*\n\n` +
-                                            `Booking ID: #${booking.id}\n\n` +
-                                            `👤 Customer: ${booking.user?.name || "Guest"}\n` +
-                                            `📞 Customer: ${booking.user?.phone}\n` +
-                                            `📍 Pickup: ${booking.pickup_location}\n` +
-                                            `🏁 Drop: ${booking.drop_location}\n` +
-                                            `📏 Distance: ${booking.distance_km} km\n\n` +
-                                            `Please reach on time and drive safely. 🙏`
+                                            `*Urban Cabz - Trip Assignment* 🚨\n\n` +
+                                            `New trip assigned for Booking *#${booking.id}*.\n\n` +
+                                            `*Customer:* ${booking.user?.name || "Guest"}\n` +
+                                            `*Contact:* ${booking.user?.phone || "N/A"}\n\n` +
+                                            `*Pickup:* ${booking.pickup_location}\n` +
+                                            `*Drop:* ${booking.drop_location}\n` +
+                                            `*Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
+                                            `Please ensure a timely pickup. Drive safely.`
                                         );
-                                        window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
+                                        window.open(`https://wa.me/${rawPhone}?text=${msg}`, "_blank");
                                     }}
                                     className="py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                                 >

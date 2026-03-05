@@ -219,6 +219,61 @@ const RoutingService = {
     }
   },
 
+  async reverseGeocode(lat, lng) {
+    // Try Mappls first
+    try {
+      const mapplsResult = await MapplsService.reverseGeocode(lat, lng);
+      // Ensure we return the expected format
+      return {
+        address: mapplsResult.shortAddress || mapplsResult.formattedAddress,
+        fullAddress: mapplsResult.formattedAddress,
+        source: 'mappls'
+      };
+    } catch (err) {
+      console.warn("Mappls reverse geocode failed, falling back to Nominatim", err);
+    }
+
+    // Fallback to Nominatim
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { 'User-Agent': 'UrbanCabz/1.0' } }
+      );
+
+      if (!response.ok) throw new Error('Nominatim reverse geocoding failed');
+
+      const data = await response.json();
+
+      if (data && data.display_name) {
+        const addr = data.address || {};
+        const components = [
+          addr.road || addr.neighbourhood || addr.suburb,
+          addr.city || addr.town || addr.village || addr.district,
+          addr.state,
+        ].filter(Boolean);
+
+        const shortAddress = components.length > 0
+          ? components.slice(0, 3).join(', ')
+          : data.display_name.split(',').slice(0, 3).join(',');
+
+        return {
+          address: shortAddress,
+          fullAddress: data.display_name,
+          source: 'nominatim'
+        };
+      }
+
+      throw new Error('Nominatim returned invalid data');
+    } catch (error) {
+      console.error('Reverse geocoding completely failed:', error);
+      return {
+        address: 'Unknown location',
+        fullAddress: 'Unknown location',
+        source: 'fallback'
+      };
+    }
+  },
+
   async getDistanceAndDuration(fromAddress, toAddress) {
     // If inputs are objects with lat/lng, use them directly
     let fromCoords = typeof fromAddress === 'object' ? fromAddress : null;

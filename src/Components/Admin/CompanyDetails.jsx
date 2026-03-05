@@ -112,18 +112,6 @@ export default function CompanyDetails({ company, onClose }) {
         if (res.success) {
             toast.success("Company details updated");
             setShowEditModal(false);
-            // We need to refresh the parent list too, but strictly speaking calling onClose() might be better 
-            // but we want to stay here. We can reload local data but the parent list won't update until close.
-            // For now, let's just update local view if we had local state for company details (we use props).
-            // Since we use props 'company', we can't easily update the view without parent update.
-            // Ideally we should have a callback onUpdate.
-            // For now, let's just close the modal and maybe the parent will refresh if we trigger something?
-            // Actually, let's just reload the data if we were fetching company details ourselves?
-            // Wait, we are fetching 'bookings' but company details come from props.
-            // The user will see old data in header until they close and reopen CompanyDetails.
-            // To fix this properly, we should refetch company details here or ask parent to refresh.
-            // Let's rely on the user closing and reopening for now or just reload the page/component?
-            // Actually, we can just call onClose() to force refresh from list.
             onClose();
         } else {
             toast.error(res.message || "Failed to update company");
@@ -201,7 +189,7 @@ export default function CompanyDetails({ company, onClose }) {
                 <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <div className="flex items-center gap-6">
                         <div className="h-16 w-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-indigo-600/20">
-                            {company.company_name[0]}
+                            {company.company_name?.[0] || '?'}
                         </div>
                         <div>
                             <h2 className="text-3xl font-black text-slate-900 tracking-tight">{company.company_name}</h2>
@@ -278,9 +266,9 @@ export default function CompanyDetails({ company, onClose }) {
                             <div className="grid grid-cols-4 gap-6">
                                 {[
                                     { label: "Total Bookings", val: displayedStats.totalBookings, color: "text-indigo-600", bg: "bg-indigo-50" },
-                                    { label: "Billed Amount", val: `₹${displayedStats.totalBilled.toLocaleString()}`, color: "text-blue-600", bg: "bg-blue-50" },
-                                    { label: "Total Paid", val: `₹${displayedStats.totalPaid.toLocaleString()}`, color: "text-emerald-600", bg: "bg-emerald-50" },
-                                    { label: "Outstanding", val: `₹${displayedStats.outstanding.toLocaleString()}`, color: "text-rose-600", bg: "bg-rose-50" },
+                                    { label: "Billed Amount", val: `₹${(displayedStats.totalBilled || 0).toLocaleString()}`, color: "text-blue-600", bg: "bg-blue-50" },
+                                    { label: "Total Paid", val: `₹${(displayedStats.totalPaid || 0).toLocaleString()}`, color: "text-emerald-600", bg: "bg-emerald-50" },
+                                    { label: "Outstanding", val: `₹${(displayedStats.outstanding || 0).toLocaleString()}`, color: "text-rose-600", bg: "bg-rose-50" },
                                 ].map((stat, i) => (
                                     <div key={i} className={`${stat.bg} p-6 rounded-2xl border border-white shadow-sm`}>
                                         <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">{stat.label}</span>
@@ -316,7 +304,7 @@ export default function CompanyDetails({ company, onClose }) {
                                         <thead>
                                             <tr className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
                                                 <th className="px-8 py-6 pl-2">Booking ID</th>
-                                                <th className="px-8 py-6">Date & Time</th>
+                                                <th className="px-8 py-6">Date &amp; Time</th>
                                                 <th className="px-8 py-6">User</th>
                                                 <th className="px-8 py-6">Route</th>
                                                 <th className="px-8 py-6">Amount</th>
@@ -335,11 +323,11 @@ export default function CompanyDetails({ company, onClose }) {
                                                         })}
                                                     </td>
                                                     <td className="px-8 py-6">
-                                                        <p className="text-xs font-bold">{booking.bookedByUser.name}</p>
-                                                        <p className="text-[10px] text-slate-400">{booking.bookedByUser.email}</p>
+                                                        <p className="text-xs font-bold">{booking.bookedByUser?.name || '—'}</p>
+                                                        <p className="text-[10px] text-slate-400">{booking.bookedByUser?.email || ''}</p>
                                                     </td>
                                                     <td className="px-8 py-6">
-                                                        <p className="text-xs truncate max-w-[150px]">{booking.pickup_location.split(',')[0]} → {booking.drop_location.split(',')[0]}</p>
+                                                        <p className="text-xs truncate max-w-[150px]">{booking.pickup_location?.split(',')[0]} → {booking.drop_location?.split(',')[0]}</p>
                                                     </td>
                                                     <td className="px-8 py-6 font-black text-slate-900">₹{parseFloat(booking.total_amount).toLocaleString()}</td>
                                                     <td className="px-8 py-6">
@@ -359,6 +347,11 @@ export default function CompanyDetails({ company, onClose }) {
                                                     </td>
                                                 </tr>
                                             ))}
+                                            {filteredBookings.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="7" className="py-20 text-center text-slate-400 font-bold italic">No bookings found</td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

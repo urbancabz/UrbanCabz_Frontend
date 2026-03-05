@@ -18,6 +18,8 @@ export default function CabListingCard({
     seats = 4,
     bags = 2,
     basePrice = 12,
+    airportBasePrice = 0,
+    airportKmIncluded = 0,
     tags = [],
     rating,
     vehicleType = "Sedan",
@@ -26,6 +28,24 @@ export default function CabListingCard({
 
   const calculatePrice = () => {
     if (!distanceKm || !pricingSettings) return 0;
+
+    // AIRPORT SPECIAL CASE: Use flat rate (+ extra km charges beyond threshold if beyond included km)
+    if (rideType === "airport" && airportBasePrice > 0) {
+      const threshold = pricingSettings.min_km_threshold || 100;
+      const { min_km_airport_apply } = pricingSettings;
+
+      if (distanceKm > threshold) {
+        if (min_km_airport_apply) {
+          // Rule: If > threshold and toggle is ON, apply 300km min charge
+          return Math.round(Math.max(300, distanceKm) * basePrice);
+        } else {
+          // Rule: If > threshold and toggle is OFF, apply base + extra km beyond threshold
+          const extraKm = distanceKm - threshold;
+          return Math.round(airportBasePrice + extraKm * basePrice);
+        }
+      }
+      return Math.round(airportBasePrice);
+    }
 
     let billableDistance = 0;
     const RULE_MIN_KM = 300;
@@ -38,18 +58,14 @@ export default function CabListingCard({
       min_km_roundtrip_apply
     } = pricingSettings;
 
-    // Check if 300km rule should be applied
-    let applyRule = false;
-    if (distanceKm > min_km_threshold) {
-      if (rideType === "airport" && min_km_airport_apply) applyRule = true;
-      else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
-      else if (rideType === "roundtrip" && min_km_roundtrip_apply) applyRule = true;
-    }
-
-    const effectiveMinKmPerDay = applyRule ? RULE_MIN_KM : 0;
-
-    if (rideType === "oneway" || rideType === "airport") {
-      // One-way / Airport logic
+    // Airport-only: threshold check
+    const airportApplyRule = rideType === "airport" && min_km_airport_apply && distanceKm > min_km_threshold;
+    const effectiveMinKmPerDay = airportApplyRule ? RULE_MIN_KM : 0;
+    if (rideType === "oneway") {
+      // Oneway: 300km min regardless of distance if toggle ON
+      billableDistance = min_km_oneway_apply ? Math.max(RULE_MIN_KM, distanceKm) : distanceKm;
+    } else if (rideType === "airport") {
+      // Airport: 300km rule only when distance > threshold AND toggle ON
       billableDistance = Math.max(effectiveMinKmPerDay, distanceKm);
     } else if (rideType === "roundtrip") {
       // Round-trip logic
@@ -62,7 +78,9 @@ export default function CabListingCard({
         days = diffDays + 1; // Include both start and end day
       }
 
-      const baseKm = days * effectiveMinKmPerDay;
+      // Round trip applies the 300km per day rule if the toggle is ON, regardless of the threshold
+      const effectiveRoundTripMinKmPerDay = min_km_roundtrip_apply ? RULE_MIN_KM : 0;
+      const baseKm = days * effectiveRoundTripMinKmPerDay;
       const actualKm = distanceKm * 2; // Roundtrip distance is 2x
       billableDistance = Math.max(baseKm, actualKm);
     }
@@ -75,9 +93,14 @@ export default function CabListingCard({
   // Helper to check if min charge note should be shown
   const isMinChargeApplied = () => {
     if (!pricingSettings || !distanceKm) return false;
+
+    // If it's airport and using flat rate, we don't show the 300km min charge note
+    if (rideType === "airport" && airportBasePrice > 0) return false;
+
     const { min_km_threshold, min_km_airport_apply, min_km_oneway_apply, min_km_roundtrip_apply } = pricingSettings;
 
-    if (distanceKm <= min_km_threshold) return false;
+    // Airport is the only one constrained by the minimum distance threshold
+    if (rideType === "airport" && distanceKm <= min_km_threshold) return false;
 
     if (rideType === "airport" && min_km_airport_apply && distanceKm < 300) return true;
     if (rideType === "oneway" && min_km_oneway_apply && distanceKm < 300) return true;

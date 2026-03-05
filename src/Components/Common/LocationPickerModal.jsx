@@ -77,30 +77,11 @@ export default function LocationPickerModal({
     const reverseGeocode = useCallback(async (lat, lng) => {
         setIsLoadingAddress(true);
         try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-                { headers: { 'User-Agent': 'UrbanCabz/1.0' } }
-            );
+            const result = await RoutingService.reverseGeocode(lat, lng);
 
-            if (!response.ok) throw new Error('Reverse geocoding failed');
-
-            const data = await response.json();
-
-            if (data && data.display_name) {
-                // Format a shorter, more readable address
-                const addr = data.address || {};
-                const components = [
-                    addr.road || addr.neighbourhood || addr.suburb,
-                    addr.city || addr.town || addr.village || addr.district,
-                    addr.state,
-                ].filter(Boolean);
-
-                const shortAddress = components.length > 0
-                    ? components.slice(0, 3).join(', ')
-                    : data.display_name.split(',').slice(0, 3).join(',');
-
-                setAddress(shortAddress);
-                return shortAddress;
+            if (result && result.address) {
+                setAddress(result.address);
+                return result.address;
             }
 
             setAddress('Unknown location');

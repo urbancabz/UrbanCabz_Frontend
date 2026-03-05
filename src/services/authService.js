@@ -1,7 +1,6 @@
 // src/services/authService.js
+import { apiClient } from "./apiClient";
 
-// Configure your backend API URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050/api/v1';
 const CUSTOMER_PROFILE_KEY = 'customerProfile';
 
 function setAdminSession(token) {
@@ -36,240 +35,104 @@ function persistCustomerProfile(profile) {
 
 /**
  * Customer Login
- * @param {Object} credentials - { email, password }
- * @returns {Promise<Object>} - { success, data, message }
  */
 export async function customerLogin(credentials) {
-  const requestData = {
+  const res = await apiClient.post("/auth/login", {
     email: credentials.email,
     password: credentials.password,
-  };
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Login failed',
-        error: data.error,
-      };
+  if (res.success && res.data.token) {
+    if (isAdminUser(res.data)) {
+      setAdminSession(res.data.token);
+    } else {
+      localStorage.setItem('customerToken', res.data.token);
+      localStorage.setItem('userType', 'customer');
+      clearAdminSession();
     }
-
-    // Store token if provided
-    if (data.token) {
-      if (isAdminUser(data)) {
-        setAdminSession(data.token);
-      } else {
-        localStorage.setItem('customerToken', data.token);
-        localStorage.setItem('userType', 'customer');
-        clearAdminSession();
-      }
+    if (res.data.user) {
+      persistCustomerProfile(res.data.user);
     }
-
-    if (data.user) {
-      persistCustomerProfile(data.user);
-    }
-
-    return {
-      success: true,
-      data: data,
-      message: data.message || 'Login successful',
-    };
-  } catch (error) {
-    console.error('Customer login error');
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
   }
+  return res;
 }
 
 /**
  * Customer Signup
- * @param {Object} userData - { fullName, mobile, email, password }
- * @returns {Promise<Object>} - { success, data, message }
  */
 export async function customerSignup(userData) {
-  const requestData = {
+  const res = await apiClient.post("/auth/register", {
     name: userData.fullName,
     phone: userData.mobile,
     email: userData.email,
     password: userData.password,
-  };
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Signup failed',
-        error: data.error,
-      };
+  if (res.success && res.data.token) {
+    if (isAdminUser(res.data)) {
+      setAdminSession(res.data.token);
+    } else {
+      localStorage.setItem('customerToken', res.data.token);
+      localStorage.setItem('userType', 'customer');
+      clearAdminSession();
     }
-
-    // Store token if provided
-    if (data.token) {
-      if (isAdminUser(data)) {
-        setAdminSession(data.token);
-      } else {
-        localStorage.setItem('customerToken', data.token);
-        localStorage.setItem('userType', 'customer');
-        clearAdminSession();
-      }
+    if (res.data.user) {
+      persistCustomerProfile(res.data.user);
     }
-
-    if (data.user) {
-      persistCustomerProfile(data.user);
-    }
-
-    return {
-      success: true,
-      data: data,
-      message: data.message || 'Signup successful',
-    };
-  } catch (error) {
-    console.error('Customer signup error');
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
   }
+  return res;
 }
 
 /**
  * Business Login
- * @param {Object} credentials - { companyId, email, password }
- * @returns {Promise<Object>} - { success, data, message }
  */
 export async function businessLogin(credentials) {
-  const requestData = {
-    companyId: credentials.companyId,
+  const res = await apiClient.post("/auth/b2b/login", {
     email: credentials.email,
     password: credentials.password,
-  };
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/b2b/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Login failed',
-        error: data.error,
-      };
+  if (res.success && res.data.token) {
+    if (isAdminUser(res.data)) {
+      setAdminSession(res.data.token);
+    } else {
+      localStorage.setItem('businessToken', res.data.token);
+      localStorage.setItem('userType', 'business');
+      clearAdminSession();
     }
-
-    // Store token if provided
-    if (data.token) {
-      if (isAdminUser(data)) {
-        setAdminSession(data.token);
-      } else {
-        localStorage.setItem('businessToken', data.token);
-        localStorage.setItem('userType', 'business');
-        clearAdminSession();
-      }
-    }
-
-    return {
-      success: true,
-      data: data,
-      message: data.message || 'Login successful',
-    };
-  } catch (error) {
-    console.error('Business login error');
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
   }
+  return res;
 }
 
 /**
  * Business Signup
- * @param {Object} businessData - { companyName, companyEmail, gstNumber, email, password }
- * @returns {Promise<Object>} - { success, data, message }
  */
 export async function businessSignup(businessData) {
-  const requestData = {
+  const res = await apiClient.post("/auth/business/signup", {
     companyName: businessData.companyName,
     companyEmail: businessData.companyEmail,
     gstNumber: businessData.gstNumber || null,
     email: businessData.email,
     password: businessData.password,
-  };
+  });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/business/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Signup failed',
-        error: data.error,
-      };
+  if (res.success && res.data.token) {
+    if (isAdminUser(res.data)) {
+      setAdminSession(res.data.token);
+    } else {
+      localStorage.setItem('businessToken', res.data.token);
+      localStorage.setItem('userType', 'business');
+      clearAdminSession();
     }
-
-    // Store token if provided
-    if (data.token) {
-      if (isAdminUser(data)) {
-        setAdminSession(data.token);
-      } else {
-        localStorage.setItem('businessToken', data.token);
-        localStorage.setItem('userType', 'business');
-        clearAdminSession();
-      }
-    }
-
-    return {
-      success: true,
-      data: data,
-      message: data.message || 'Signup successful',
-    };
-  } catch (error) {
-    console.error('Business signup error');
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
   }
+  return res;
+}
+
+/**
+ * Register B2B Interest/Request
+ */
+export async function registerB2BRequest(formData) {
+  return apiClient.post("/b2b/register", formData);
 }
 
 /**
@@ -285,7 +148,6 @@ export function logout() {
 
 /**
  * Get stored auth token
- * @returns {string|null}
  */
 export function getAuthToken() {
   const userType = localStorage.getItem('userType');
@@ -296,7 +158,6 @@ export function getAuthToken() {
   } else if (userType === 'business') {
     return localStorage.getItem('businessToken');
   }
-  // Fallback: return any available token (helps if userType missing)
   return (
     localStorage.getItem('adminToken') ||
     localStorage.getItem('customerToken') ||
@@ -306,7 +167,6 @@ export function getAuthToken() {
 
 /**
  * Check if user is authenticated
- * @returns {boolean}
  */
 export function isAuthenticated() {
   return !!getAuthToken();
@@ -316,335 +176,92 @@ export function isAuthenticated() {
  * Fetch authenticated customer profile
  */
 export async function fetchCustomerProfile() {
-  const token = getAuthToken();
-  if (!token) {
-    return { success: false, message: 'Not authenticated', status: 401 };
+  const res = await apiClient.get("/auth/me");
+  if (res.success && res.data.user) {
+    persistCustomerProfile(res.data.user);
   }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Unable to fetch profile',
-        status: response.status,
-      };
-    }
-
-    if (data.user) {
-      persistCustomerProfile(data.user);
-    }
-
-    return {
-      success: true,
-      data: data.user,
-      message: data.message || 'Profile fetched',
-      status: response.status,
-    };
-  } catch (error) {
-    console.error('❌ Fetch profile error:', error);
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
-  }
+  return res;
 }
 
 /**
- * Fetch B2B Dashboard Sync (Aggregated profile, bookings, payments, fleet)
+ * Fetch B2B Dashboard Sync
  */
 export async function getB2BDashboardSync() {
-  try {
-    const token = getAuthToken(); // Assuming getAuthToken can retrieve business token
-    if (!token) {
-      return { success: false, message: 'Not authenticated', status: 401 };
-    }
-
-    const response = await fetch(`${API_BASE_URL}/b2b/dashboard-sync`, {
-      method: "GET",
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Failed to fetch dashboard data.',
-        status: response.status,
-      };
-    }
-    return {
-      success: true,
-      data: data,
-      message: data.message || 'Dashboard data fetched successfully',
-      status: response.status,
-    };
-  } catch (error) {
-    console.error("Error fetching B2B dashboard sync:", error);
-    return {
-      success: false,
-      message: "Network error. Failed to fetch dashboard data.",
-      error: error.message,
-    };
-  }
+  return apiClient.get("/b2b/dashboard-sync");
 }
 
 /**
  * Update authenticated customer profile
  */
 export async function updateCustomerProfile(payload) {
-  const token = getAuthToken();
-  if (!token) {
-    return { success: false, message: 'Not authenticated', status: 401 };
+  const res = await apiClient.put("/auth/me", payload);
+  if (res.success && res.data.user) {
+    persistCustomerProfile(res.data.user);
   }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Unable to update profile',
-        status: response.status,
-      };
-    }
-
-    if (data.user) {
-      persistCustomerProfile(data.user);
-    }
-
-    return {
-      success: true,
-      data: data.user,
-      message: data.message || 'Profile updated',
-      status: response.status,
-    };
-  } catch (error) {
-    console.error('❌ Update profile error:', error);
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
-  }
+  return res;
 }
 
 /**
- * Request password reset OTP over WhatsApp
+ * Request password reset OTP
  */
 export async function requestPasswordReset(payload) {
   const body = {};
   if (payload.email) body.email = payload.email;
   if (payload.phone) body.phone = payload.phone;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/password/forgot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Unable to send OTP',
-      };
-    }
-
-    return {
-      success: true,
-      data,
-      message: data.message || 'OTP sent successfully',
-    };
-  } catch (error) {
-    console.error('❌ Password reset OTP error:', error);
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
-  }
+  return apiClient.post("/auth/password/forgot", body);
 }
 
 /**
  * Complete password reset with OTP
  */
 export async function completePasswordReset(payload) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/password/reset`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        resetId: payload.resetId,
-        otp: payload.otp,
-        newPassword: payload.newPassword,
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Unable to reset password',
-      };
-    }
-
-    return {
-      success: true,
-      data,
-      message: data.message || 'Password updated successfully',
-    };
-  } catch (error) {
-    console.error('❌ Password reset completion error:', error);
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
-  }
+  return apiClient.post("/auth/password/reset", {
+    resetId: payload.resetId,
+    otp: payload.otp,
+    newPassword: payload.newPassword,
+  });
 }
 
 /**
- * Set B2B permanent password (first login)
+ * Set B2B permanent password
  */
 export async function b2bSetPassword(payload) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/b2b/set-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: payload.email,
-        password: payload.password
-      }),
-    });
+  const res = await apiClient.post("/auth/b2b/set-password", {
+    email: payload.email,
+    password: payload.password
+  });
 
-    const data = await response.json();
-    if (!response.ok) {
-      return {
-        success: false,
-        message: data.message || 'Unable to set password',
-      };
-    }
-
-    if (data.token) {
-      localStorage.setItem('businessToken', data.token);
-      localStorage.setItem('userType', 'business');
-    }
-
-    return {
-      success: true,
-      data,
-      message: data.message || 'Password set successfully',
-    };
-  } catch (error) {
-    console.error('❌ B2B set password error:', error);
-    return {
-      success: false,
-      message: 'Network error. Please try again.',
-      error: error.message,
-    };
+  if (res.success && res.data.token) {
+    localStorage.setItem('businessToken', res.data.token);
+    localStorage.setItem('userType', 'business');
   }
+  return res;
 }
 
+/**
+ * Fetch B2B Company Profile
+ */
 export async function getCompanyProfile() {
-  try {
-    const token = localStorage.getItem('businessToken');
-    const response = await fetch(`${API_BASE_URL}/b2b/company/my`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('getCompanyProfile error:', error);
-    return { success: false, message: 'Network error fetching company profile' };
-  }
+  return apiClient.get("/b2b/company/my");
 }
 
-
+/**
+ * Book Business Ride
+ */
 export async function bookBusinessRide(bookingData) {
-  try {
-    const token = localStorage.getItem('businessToken');
-    const response = await fetch(`${API_BASE_URL}/b2b/bookings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(bookingData),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('bookBusinessRide error:', error);
-    return { success: false, message: 'Network error booking business ride' };
-  }
+  return apiClient.post("/b2b/bookings", bookingData);
 }
 
 /**
  * Verify phone number with OTP
  */
 export async function verifyPhone(userId, otp) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-phone`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, otp }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      return { success: false, message: data.message || 'Verification failed' };
-    }
-
-    // If verified successfully, we might get a token or auto-login logic might be needed
-    // Assuming backend returns success and frontend refreshes/logs in
-    return { success: true, message: data.message || 'Verified successfully' };
-  } catch (error) {
-    console.error('verifyPhone error:', error);
-    return { success: false, message: 'Network error verifying phone' };
-  }
+  return apiClient.post("/auth/verify-phone", { userId, otp });
 }
 
 /**
  * Resend verification OTP
  */
 export async function resendVerificationOtp(userId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/resend-verification-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      return { success: false, message: data.message || 'Resend failed' };
-    }
-    return { success: true, message: data.message || 'OTP sent' };
-  } catch (error) {
-    console.error('resendVerificationOtp error:', error);
-    return { success: false, message: 'Network error resending OTP' };
-  }
+  return apiClient.post("/auth/resend-verification-otp", { userId });
 }

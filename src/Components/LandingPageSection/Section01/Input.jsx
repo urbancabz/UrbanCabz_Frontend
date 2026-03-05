@@ -42,6 +42,9 @@ export default function Input({ destinationPath = "/cab-booking" }) {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [tripMetrics, setTripMetrics] = useState(null);
+  const [isPrefetching, setIsPrefetching] = useState(false); // silent background calc
+  const prefetchedMetricsRef = React.useRef(null); // cache the result so Book is instant
+  const prefetchLocKeyRef = React.useRef(null); // track which loc pair was prefetched
 
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [pickerType, setPickerType] = useState('pickup');
@@ -112,28 +115,61 @@ export default function Input({ destinationPath = "/cab-booking" }) {
         errors.pickupTime = "Must be at least 1 hour from now";
       }
     }
-    if (rideType === "roundtrip" && pickupDate && returnDate && returnDate <= pickupDate) {
-      errors.returnDate = "Return must be after pickup";
+    if (rideType === "roundtrip" && pickupDate && returnDate && returnDate < pickupDate) {
+      errors.returnDate = "Return must be on or after pickup date";
     }
     setFieldErrors(errors);
   }, [fromQuery, toQuery, pickupDate, pickupTime, returnDate, rideType]);
 
+  // Prefetch distance as soon as both locations are set — store in a ref so Book is instant
   useEffect(() => {
-    const getMetrics = async () => {
-      if (fromQuery && toQuery && !fieldErrors.to && fromQuery.length > 3 && toQuery.length > 3) {
+    const locKey = `${fromQuery}||${toQuery}`;
+    if (fromQuery && toQuery && !fieldErrors.to && fromQuery.length > 3 && toQuery.length > 3) {
+      // Skip if we already prefetched for the exact same pair
+      if (prefetchLocKeyRef.current === locKey && prefetchedMetricsRef.current) return;
+
+      prefetchLocKeyRef.current = locKey;
+      prefetchedMetricsRef.current = null; // invalidate old result
+
+      const timer = setTimeout(async () => {
+        setIsPrefetching(true);
         try {
-          const metrics = await RoutingService.getDistanceAndDuration(fromQuery, toQuery);
+          const startLoc = pickupCoords || fromQuery;
+          const endLoc = dropCoords || toQuery;
+
+          // Import required services for prefetching
+          const { fetchPublicFleet, fetchPricingSettings, fetchMyFleet } = await import("../../../services/fleetService");
+
+          // Prefetch everything in parallel
+          const [metrics, fleetRes, pricingRes] = await Promise.all([
+            RoutingService.getDistanceAndDuration(startLoc, endLoc),
+            destinationPath.includes("business") ? fetchMyFleet() : fetchPublicFleet(),
+            fetchPricingSettings()
+          ]);
+
+          const prefetchedData = {
+            metrics,
+            fleet: fleetRes.success ? fleetRes.data.vehicles : [],
+            pricing: pricingRes.success ? pricingRes.data : null
+          };
+
+          prefetchedMetricsRef.current = prefetchedData;
           setTripMetrics(metrics);
         } catch (err) {
+          console.error("Prefetch error:", err);
+          prefetchedMetricsRef.current = null;
           setTripMetrics(null);
+        } finally {
+          setIsPrefetching(false);
         }
-      } else {
-        setTripMetrics(null);
-      }
-    };
-    const timer = setTimeout(getMetrics, 1000);
-    return () => clearTimeout(timer);
-  }, [fromQuery, toQuery, fieldErrors.to]);
+      }, 800);
+      return () => clearTimeout(timer);
+    } else {
+      prefetchedMetricsRef.current = null;
+      prefetchLocKeyRef.current = null;
+      setTripMetrics(null);
+    }
+  }, [fromQuery, toQuery, pickupCoords, dropCoords, fieldErrors.to]);
 
   const defaultCities = [
     "New Delhi, Delhi, India", "Mumbai, Maharashtra, India", "Bangalore, Karnataka, India",
@@ -226,35 +262,26 @@ export default function Input({ destinationPath = "/cab-booking" }) {
     if (e && e.preventDefault) e.preventDefault();
     setError(null);
 
-    if (!fromQuery || !toQuery) {
-      setError("Please enter both From and To locations");
-      return;
-    }
-    if (Object.keys(fieldErrors).length > 0) {
-      setError("Please fix the errors in the form first");
-      return;
-    }
-    if (!pickupDate || !pickupTime) {
-      setError("Please select pickup date and time");
-      return;
-    }
-    if (rideType === "roundtrip" && !returnDate) {
-      setError("Please select a return date");
-      return;
-    }
+    if (!fromQuery || !toQuery) { setError("Please enter both From and To locations"); return; }
+    if (Object.keys(fieldErrors).length > 0) { setError("Please fix the errors in the form first"); return; }
+    if (!pickupDate || !pickupTime) { setError("Please select pickup date and time"); return; }
+    if (rideType === "roundtrip" && !returnDate) { setError("Please select a return date"); return; }
 
     setIsLoading(true);
 
     try {
       let metrics;
-      if (pickupCoords && dropCoords) {
-        metrics = await RoutingService.getDistanceAndDuration(pickupCoords, dropCoords);
-      } else if (pickupCoords) {
-        metrics = await RoutingService.getDistanceAndDuration(pickupCoords, toQuery);
-      } else if (dropCoords) {
-        metrics = await RoutingService.getDistanceAndDuration(fromQuery, dropCoords);
+
+      // Use prefetched result if available for the same location pair — skips the slow API call
+      const currentLocKey = `${fromQuery}||${toQuery}`;
+      let prefetched = null;
+      if (prefetchedMetricsRef.current && prefetchLocKeyRef.current === currentLocKey) {
+        prefetched = prefetchedMetricsRef.current;
+        metrics = prefetched.metrics;
       } else {
-        metrics = await RoutingService.getDistanceAndDuration(fromQuery, toQuery);
+        const startLoc = pickupCoords || fromQuery;
+        const endLoc = dropCoords || toQuery;
+        metrics = await RoutingService.getDistanceAndDuration(startLoc, endLoc);
       }
 
       if (!metrics || !metrics.distanceKm) {
@@ -263,15 +290,15 @@ export default function Input({ destinationPath = "/cab-booking" }) {
 
       navigate(destinationPath, {
         state: {
-          from: fromQuery,
-          to: toQuery,
-          pickupDate,
-          returnDate,
-          pickupTime,
-          rideType,
+          from: fromQuery, to: toQuery,
+          pickupDate, returnDate, pickupTime, rideType,
           distanceKm: metrics.distanceKm,
           pickupCoords: pickupCoords || metrics.fromCoords,
           dropCoords: dropCoords || metrics.toCoords,
+          // Pass prefetched data to the next page
+          prefetchedMetrics: metrics,
+          prefetchedFleet: prefetched?.fleet || null,
+          prefetchedPricing: prefetched?.pricing || null,
         },
       });
     } catch (err) {
@@ -490,22 +517,29 @@ export default function Input({ destinationPath = "/cab-booking" }) {
             </motion.button>
           </div>
 
-          {/* Trip Metrics Preview */}
+          {/* Trip Metrics Preview - shows as soon as route is prefetched */}
           <AnimatePresence>
-            {tripMetrics && (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="mt-6 p-4 rounded-xl bg-yellow-400/10 border border-yellow-400/20 backdrop-blur-md flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold">Estimated Distance</span>
-                    <span className="text-xl font-bold text-white">{tripMetrics.distanceKm} <span className="text-xs text-stone-400">km</span></span>
+            {(tripMetrics || isPrefetching) && fromQuery && toQuery && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="mt-4 p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/20 backdrop-blur-md flex justify-between items-center">
+                {isPrefetching ? (
+                  <div className="flex items-center gap-3 text-stone-400 text-sm">
+                    <div className="w-4 h-4 border-2 border-stone-500 border-t-yellow-400 rounded-full animate-spin shrink-0" />
+                    <span>Calculating route...</span>
                   </div>
-                  <div className="w-px h-8 bg-white/10 mx-2"></div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold">Duration</span>
-                    <span className="text-xl font-bold text-white">{tripMetrics.durationMins} <span className="text-xs text-stone-400">min</span></span>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold">Distance</span>
+                      <span className="text-xl font-bold text-white">{tripMetrics.distanceKm} <span className="text-xs text-stone-400">km</span></span>
+                    </div>
+                    <div className="w-px h-8 bg-white/10 mx-2" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold">Duration</span>
+                      <span className="text-xl font-bold text-white">{tripMetrics.durationMins} <span className="text-xs text-stone-400">min</span></span>
+                    </div>
                   </div>
-                </div>
-                <Navigation className="w-6 h-6 text-yellow-400 opacity-50" />
+                )}
+                <Navigation className="w-5 h-5 text-yellow-400 opacity-50 shrink-0" />
               </motion.div>
             )}
           </AnimatePresence>

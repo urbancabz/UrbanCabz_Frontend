@@ -132,7 +132,7 @@ export default function ProfileModal({ open, onClose }) {
                 {avatarText}
               </div>
               <div>
-                <p className="text-lg font-semibold text-gray-900">{user.name || "Customer"}</p>
+                <p className="text-lg font-semibold text-gray-900">{user.name || user.email || "User"}</p>
                 <p className="text-sm text-gray-500">{user.email}</p>
               </div>
             </div>

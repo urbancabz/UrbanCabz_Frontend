@@ -20,8 +20,8 @@ const isPlaceholderLocation = (value) => {
   return normalized === "pickup location" || normalized === "drop location";
 };
 
-export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pickupDate, pickupTime, onDistanceCalculated, isDark }) {
-  const [tripMetrics, setTripMetrics] = useState(INITIAL_METRICS);
+export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pickupDate, pickupTime, onDistanceCalculated, isDark, initialMetrics }) {
+  const [tripMetrics, setTripMetrics] = useState(initialMetrics || INITIAL_METRICS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -33,6 +33,13 @@ export default function BookingSidebar({ from, to, pickupCoords, dropCoords, pic
     }
 
     let isMounted = true;
+
+    // If we have initialMetrics from props, use them immediately
+    if (initialMetrics && initialMetrics.distanceKm) {
+      setTripMetrics(initialMetrics);
+      onDistanceCalculated?.(initialMetrics);
+      return; // Skip further logic if we have full metrics
+    }
 
     // Use coords if available for cache key or just rely on service handling
     const startLoc = pickupCoords || from;

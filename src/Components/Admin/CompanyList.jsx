@@ -40,8 +40,8 @@ export default function CompanyList({ companies = [], onUpdate }) {
     };
 
     const filteredCompanies = companies.filter(company =>
-        company.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.company_email.toLowerCase().includes(searchTerm.toLowerCase())
+        (company.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (company.company_email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -186,7 +186,7 @@ export default function CompanyList({ companies = [], onUpdate }) {
                         company={selectedCompany}
                         onClose={() => {
                             setSelectedCompany(null);
-                            fetchCompanies();
+                            if (onUpdate) onUpdate();
                         }}
                     />
                 )}

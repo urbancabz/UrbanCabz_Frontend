@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TruckIcon } from "@heroicons/react/24/solid";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
+import { apiClient } from "../../services/apiClient";
 
 export default function CompanyFleetManage({ company, onClose }) {
     const [assignedFleet, setAssignedFleet] = useState([]);
@@ -22,22 +21,13 @@ export default function CompanyFleetManage({ company, onClose }) {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('adminToken');
-
             const [assignedRes, allRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/b2b/companies/${company.id}/fleet`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch(`${API_BASE_URL}/fleet`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
+                apiClient.get(`/b2b/companies/${company.id}/fleet`),
+                apiClient.get(`/fleet`)
             ]);
 
-            const assignedData = await assignedRes.json();
-            const allData = await allRes.json();
-
-            if (assignedData.success) setAssignedFleet(assignedData.data);
-            if (allData.success) setAllFleet(allData.data.vehicles);
+            if (assignedRes.success) setAssignedFleet(assignedRes.data);
+            if (allRes.success) setAllFleet(allRes.data.vehicles || []);
 
         } catch (error) {
             console.error('Error fetching fleet data:', error);
@@ -50,27 +40,18 @@ export default function CompanyFleetManage({ company, onClose }) {
         e.preventDefault();
         setSaving(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${API_BASE_URL}/b2b/companies/${company.id}/fleet`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    fleet_vehicle_id: parseInt(selectedVehicle),
-                    custom_price_per_km: parseFloat(customPrice)
-                })
+            const res = await apiClient.post(`/b2b/companies/${company.id}/fleet`, {
+                fleet_vehicle_id: parseInt(selectedVehicle),
+                custom_price_per_km: parseFloat(customPrice)
             });
 
-            const data = await response.json();
-            if (data.success) {
+            if (res.success) {
                 setShowAddModal(false);
                 fetchData();
                 setSelectedVehicle('');
                 setCustomPrice('');
             } else {
-                alert('Error: ' + data.message);
+                alert('Error: ' + res.message);
             }
         } catch (error) {
             console.error('Error saving fleet:', error);
@@ -82,13 +63,8 @@ export default function CompanyFleetManage({ company, onClose }) {
     const handleDelete = async (fleetId) => {
         if (!window.confirm("Remove this vehicle from company fleet?")) return;
         try {
-            const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${API_BASE_URL}/b2b/fleet-assignment/${fleetId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (data.success) {
+            const res = await apiClient.delete(`/b2b/fleet-assignment/${fleetId}`);
+            if (res.success) {
                 fetchData();
             }
         } catch (error) {
@@ -166,7 +142,7 @@ export default function CompanyFleetManage({ company, onClose }) {
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="w-20 h-16 bg-white rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
-                                                {(item.vehicle.image_url && item.vehicle.image_url !== "/Dzire.avif") ? (
+                                                {(item.vehicle?.image_url && item.vehicle?.image_url !== "/Dzire.avif") ? (
                                                     <img
                                                         src={item.vehicle.image_url}
                                                         className="w-full h-full object-cover"
@@ -176,13 +152,13 @@ export default function CompanyFleetManage({ company, onClose }) {
                                                 ) : null}
                                                 <TruckIcon
                                                     className="w-8 h-8 text-slate-300"
-                                                    style={{ display: (item.vehicle.image_url && item.vehicle.image_url !== "/Dzire.avif") ? 'none' : 'block' }}
+                                                    style={{ display: (item.vehicle?.image_url && item.vehicle?.image_url !== "/Dzire.avif") ? 'none' : 'block' }}
                                                 />
                                             </div>
                                             <div>
-                                                <div className="font-black text-slate-900">{item.vehicle.name}</div>
+                                                <div className="font-black text-slate-900">{item.vehicle?.name}</div>
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
-                                                    {item.vehicle.category} • {item.vehicle.seats} Seats
+                                                    {item.vehicle?.category} • {item.vehicle?.seats} Seats
                                                 </div>
                                             </div>
                                         </div>

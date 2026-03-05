@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { fetchAdminPricingSettings, updatePricingSettings } from "../../services/fleetService";
 
 export default function PricingSettings() {
     const [settings, setSettings] = useState({
@@ -15,30 +15,23 @@ export default function PricingSettings() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
-
     useEffect(() => {
         loadSettings();
     }, []);
 
-    const getAuthToken = () => localStorage.getItem("adminToken");
-
     const loadSettings = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/pricing`, {
-                headers: { Authorization: `Bearer ${getAuthToken()}` }
-            });
-            const data = await res.json();
-            if (data.success && data.data) {
+            const res = await fetchAdminPricingSettings();
+            if (res.success && res.data) {
                 setSettings({
-                    min_km_threshold: data.data.min_km_threshold,
-                    min_km_airport_apply: data.data.min_km_airport_apply,
-                    min_km_oneway_apply: data.data.min_km_oneway_apply,
-                    min_km_roundtrip_apply: data.data.min_km_roundtrip_apply,
-                    service_airport_enabled: data.data.service_airport_enabled ?? true,
-                    service_oneway_enabled: data.data.service_oneway_enabled ?? true,
-                    service_roundtrip_enabled: data.data.service_roundtrip_enabled ?? true
+                    min_km_threshold: res.data.min_km_threshold,
+                    min_km_airport_apply: res.data.min_km_airport_apply,
+                    min_km_oneway_apply: res.data.min_km_oneway_apply,
+                    min_km_roundtrip_apply: res.data.min_km_roundtrip_apply,
+                    service_airport_enabled: res.data.service_airport_enabled ?? true,
+                    service_oneway_enabled: res.data.service_oneway_enabled ?? true,
+                    service_roundtrip_enabled: res.data.service_roundtrip_enabled ?? true
                 });
             }
         } catch (error) {
@@ -55,19 +48,11 @@ export default function PricingSettings() {
         setMessage("");
 
         try {
-            const res = await fetch(`${API_BASE_URL}/pricing`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify(settings)
-            });
-            const data = await res.json();
-            if (data.success) {
+            const res = await updatePricingSettings(settings);
+            if (res.success) {
                 setMessage("Settings updated successfully!");
             } else {
-                setMessage(data.message || "Failed to update settings");
+                setMessage(res.message || "Failed to update settings");
             }
         } catch (error) {
             console.error("Failed to save settings:", error);
@@ -132,7 +117,7 @@ export default function PricingSettings() {
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div>
                                     <h4 className="font-bold text-slate-700 text-sm">Airport Transfers</h4>
-                                    <p className="text-xs text-slate-500">Apply 300km min charge for airport trips &gt; threshold</p>
+                                    <p className="text-xs text-slate-500">Apply 300km min charge for airport trips that exceed the Base Distance Threshold</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -148,7 +133,7 @@ export default function PricingSettings() {
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div>
                                     <h4 className="font-bold text-slate-700 text-sm">One-Way Drops</h4>
-                                    <p className="text-xs text-slate-500">Apply 300km min charge for one-way trips &gt; threshold</p>
+                                    <p className="text-xs text-slate-500">Apply 300km min charge for ALL one-way trips (any distance). Customer always pays for at least 300km.</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -164,7 +149,7 @@ export default function PricingSettings() {
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div>
                                     <h4 className="font-bold text-slate-700 text-sm">Round Trips</h4>
-                                    <p className="text-xs text-slate-500">Apply 300km/day min charge for round trips &gt; threshold</p>
+                                    <p className="text-xs text-slate-500">Apply 300km/day min for ALL round trips. E.g. 1 day = 300km min, 2 days = 600km min, 3 days = 900km min.</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input

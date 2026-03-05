@@ -6,7 +6,7 @@ import useDragScroll from "../../hooks/useDragScroll";
  * HistoryTable - Reusable table component for displaying ride history
  * Props:
  *  - bookings: Array of booking objects
- *  - type: "completed" | "cancelled" | "pending" (to customize display)
+ *  - type: "completed" | "cancelled" (to customize display)
  *  - onRowClick: Optional function to handle row clicks
  */
 export default function HistoryTable({ bookings = [], type = "completed", onRowClick }) {
@@ -28,36 +28,12 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
         return `₹${Number(amount).toLocaleString("en-IN")}`;
     };
 
-    // Helper to extract successful payment details
-    const getPaymentDetails = (b) => {
-        const successPayments = b.payments?.filter(
-            (p) => p.status === "SUCCESS" || p.status === "PAID"
-        ) || [];
-
-        const totalPaid = successPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const transactionIds = successPayments.map(p => p.provider_txn_id).filter(Boolean).join(", ");
-
-        // Determine payment type
-        let paymentType = "Unpaid";
-        if (totalPaid > 0) {
-            if (totalPaid >= (b.total_amount || 0)) {
-                paymentType = "Full Online";
-            } else {
-                paymentType = "Partial / Cash";
-            }
-        }
-
-        return { transactionIds: transactionIds || "—", totalPaid, paymentType };
-    };
-
     const getStatusColor = (status) => {
         switch (status) {
             case "COMPLETED":
                 return "bg-emerald-100 text-emerald-700 border-emerald-200";
             case "CANCELLED":
                 return "bg-rose-100 text-rose-700 border-rose-200";
-            case "PENDING_PAYMENT":
-                return "bg-amber-100 text-amber-700 border-amber-200";
             default:
                 return "bg-slate-100 text-slate-700 border-slate-200";
         }
@@ -88,22 +64,20 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
             onContextMenu={onContextMenu}
             className={`overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white CustomScrollbar select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
         >
-            <table className="min-w-[1600px] w-full divide-y divide-slate-200">
+            <table className="min-w-[1400px] w-full divide-y divide-slate-200">
                 <thead>
                     <tr className="bg-slate-50/80">
                         <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">ID & Schedule</th>
                         <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Customer</th>
-                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[450px]">Route Details</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[400px]">Route Details</th>
                         <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[250px]">Dispatch Info</th>
                         <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Distance</th>
-                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[180px]">Billing Info</th>
-                        <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[200px]">Payment</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[180px]">Total Fare</th>
                         <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                     {bookings.map((booking) => {
-                        const { transactionIds, paymentType } = getPaymentDetails(booking);
                         const assignment = booking.assign_taxis?.[0] || {};
                         const estFare = (booking.total_amount || 0) - (booking.extra_charge || 0);
 
@@ -185,31 +159,11 @@ export default function HistoryTable({ bookings = [], type = "completed", onRowC
                                     </div>
                                     {booking.extra_charge > 0 && (
                                         <div className="text-[10px] font-bold text-amber-600 mb-1 uppercase tracking-tighter">
-                                            +{formatAmount(booking.extra_charge)} Extra Fees
+                                            +{formatAmount(booking.extra_charge)} Adjustments
                                         </div>
                                     )}
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic opacity-60">
-                                        Base: {formatAmount(estFare)}
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6 text-left align-top">
-                                    <div className="space-y-2">
-                                        <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-widest ${paymentType.includes("Full") ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                            paymentType === "Unpaid" ? 'bg-slate-50 text-slate-400 border-slate-100' :
-                                                'bg-amber-50 text-amber-700 border-amber-100'
-                                            }`}>
-                                            {paymentType}
-                                        </span>
-                                        {getPaymentDetails(booking).totalPaid > 0 && (
-                                            <div className="text-xs font-black text-emerald-600 tracking-tight">
-                                                Received: {formatAmount(getPaymentDetails(booking).totalPaid)}
-                                            </div>
-                                        )}
-                                        {transactionIds !== "—" && (
-                                            <div className="text-[9px] text-slate-400 font-mono break-all leading-tight opacity-70">
-                                                TXN: {transactionIds.split(',')[0]}...
-                                            </div>
-                                        )}
+                                    <div className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 inline-block">
+                                        Received by Cash
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-right align-top">

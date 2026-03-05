@@ -24,6 +24,7 @@ import {
   fetchAdminFleet,
   fetchUsers
 } from "../services/adminService";
+import { apiClient } from "../services/apiClient";
 
 export default function AdminDashboard() {
   const { logout, user } = useAuth();
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
     isFetching.current = true;
     setLoading(true);
     try {
-      const syncRes = await fetchAdminDashboardSync();
+      const syncRes = await apiClient.get("/admin/dashboard-sync", { bypassCache: force });
       if (syncRes.success) {
         setDashboardData(syncRes.data);
         hasFetched.current = true;
@@ -67,9 +68,8 @@ export default function AdminDashboard() {
     await loadDashboardData(true);
   };
 
-  // /admin/bookings → { bookings: [...] }
   const refreshBookings = async () => {
-    const res = await fetchAdminBookings();
+    const res = await apiClient.get("/admin/bookings", { bypassCache: true });
     if (res.success) {
       const arr = Array.isArray(res.data) ? res.data
         : Array.isArray(res.data?.data) ? res.data.data
@@ -79,9 +79,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // /b2b/... → varies; fall through to global refresh for correctness
   const refreshB2BBookings = async () => {
-    const res = await fetchB2BBookings();
+    const res = await apiClient.get("/admin/b2b-bookings", { bypassCache: true });
     if (res.success) {
       const arr = Array.isArray(res.data) ? res.data
         : Array.isArray(res.data?.data) ? res.data.data
@@ -91,9 +90,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // /admin/drivers → { success, data: { drivers: [...] } }
   const refreshDrivers = async () => {
-    const res = await fetchAdminDrivers();
+    const res = await apiClient.get("/admin/drivers", { bypassCache: true });
     if (res.success) {
       const arr = Array.isArray(res.data) ? res.data
         : Array.isArray(res.data?.data) ? res.data.data
@@ -104,9 +102,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // /admin/fleet → { success, data: { vehicles: [...] } }
   const refreshFleet = async () => {
-    const res = await fetchAdminFleet();
+    const res = await apiClient.get("/admin/fleet", { bypassCache: true });
     if (res.success) {
       const arr = Array.isArray(res.data) ? res.data
         : Array.isArray(res.data?.data) ? res.data.data
@@ -118,9 +115,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // /admin/users → varies
   const refreshUsers = async () => {
-    const res = await fetchUsers("", 1);
+    const res = await apiClient.get("/admin/users", { params: { page: 1 }, bypassCache: true });
     if (res.success) {
       const arr = Array.isArray(res.data) ? res.data
         : Array.isArray(res.data?.data) ? res.data.data
@@ -148,7 +144,6 @@ export default function AdminDashboard() {
       items: [
         { id: "DISPATCH", label: "Live Dispatch", icon: "⚡" },
         { id: "CUSTOMERS", label: "Customers", icon: "👥" },
-        { id: "PENDING", label: "Pending Payments", icon: "⏳" },
         { id: "HISTORY", label: "Completed Rides", icon: "✅" },
         { id: "CANCELLED", label: "Cancelled Rides", icon: "❌" },
       ]
@@ -335,24 +330,22 @@ export default function AdminDashboard() {
                 {activeView === "DRIVERS" && <DriverList drivers={dashboardData?.drivers || []} onUpdate={refreshDrivers} />}
                 {activeView === "PRICING" && <PricingSettings />}
 
-                {["HISTORY", "CANCELLED", "PENDING"].includes(activeView) && (
+                {["HISTORY", "CANCELLED"].includes(activeView) && (
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-10">
                     <div className="mb-8">
                       <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                        {activeView === "HISTORY" && "Trip Continuity 🗺️"}
+                        {activeView === "HISTORY" && "Completed Rides ✅"}
                         {activeView === "CANCELLED" && "Voided Records ❌"}
-                        {activeView === "PENDING" && "Financial Resolution ⏳"}
                       </h2>
-                      <p className="text-slate-500 text-sm font-medium mt-1">Reviewing logs for historical and financial accuracy.</p>
+                      <p className="text-slate-500 text-sm font-medium mt-1">Reviewing logs for historical accuracy.</p>
                     </div>
 
                     <HistoryTable
                       bookings={
                         activeView === "HISTORY" ? (dashboardData?.completedBookings || []) :
-                          activeView === "CANCELLED" ? (dashboardData?.cancelledBookings || []) :
-                            (dashboardData?.pendingPayments || [])
+                          (dashboardData?.cancelledBookings || [])
                       }
-                      type={activeView === "HISTORY" ? "completed" : activeView === "CANCELLED" ? "cancelled" : "pending"}
+                      type={activeView === "HISTORY" ? "completed" : "cancelled"}
                     />
                   </div>
                 )}

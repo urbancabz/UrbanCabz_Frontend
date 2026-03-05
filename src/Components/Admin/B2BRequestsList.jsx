@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import useDragScroll from '../../hooks/useDragScroll';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
+import { apiClient } from "../../services/apiClient";
 
 export default function B2BRequestsList({ requests = [], onUpdate }) {
     const { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, onContextMenu, isDragging } = useDragScroll();
@@ -17,6 +16,7 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
         state: '',
         pincode: ''
     });
+    const [processing, setProcessing] = useState(false);
 
     const handleApprove = (request) => {
         setSelectedRequest(request);
@@ -31,36 +31,30 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
             return;
         }
 
+        setProcessing(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${API_BASE_URL}/b2b/requests/${selectedRequest.id}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    admin_notes: 'Approved via admin panel',
-                    address,
-                    city,
-                    state,
-                    pincode
-                })
+            const res = await apiClient.post(`/b2b/requests/${selectedRequest.id}/approve`, {
+                admin_notes: 'Approved via admin panel',
+                address,
+                city,
+                state,
+                pincode
             });
 
-            const data = await response.json();
-            if (data.success) {
+            if (res.success) {
                 alert('B2B request approved successfully!');
                 setShowApproveModal(false);
                 setSelectedRequest(null);
                 setApproveDetails({ address: '', city: '', state: '', pincode: '' });
                 if (onUpdate) onUpdate();
             } else {
-                alert('Failed to approve request: ' + data.message);
+                alert('Failed to approve request: ' + res.message);
             }
         } catch (error) {
             console.error('Error approving request:', error);
             alert('Error approving request');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -68,29 +62,23 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
         const reason = prompt('Please enter rejection reason:');
         if (!reason) return;
 
+        setProcessing(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            const response = await fetch(`${API_BASE_URL}/b2b/requests/${requestId}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    admin_notes: reason
-                })
+            const res = await apiClient.post(`/b2b/requests/${requestId}/reject`, {     
+                admin_notes: reason
             });
 
-            const data = await response.json();
-            if (data.success) {
+            if (res.success) {
                 alert('B2B request rejected');
                 if (onUpdate) onUpdate();
             } else {
-                alert('Failed to reject request: ' + data.message);
+                alert('Failed to reject request: ' + res.message);
             }
         } catch (error) {
             console.error('Error rejecting request:', error);
             alert('Error rejecting request');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -101,7 +89,7 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
             REJECTED: 'bg-red-900/50 text-red-200 border-red-600'
         };
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status]}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.PENDING}`}>
                 {status}
             </span>
         );
@@ -109,8 +97,11 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
 
     const filteredRequests = requests.filter(req => {
         const matchesFilter = filter === 'ALL' || req.status === filter;
-        const matchesSearch = req.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.contact_email.toLowerCase().includes(searchTerm.toLowerCase());
+        const companyName = (req.company_name || "").toLowerCase();
+        const contactEmail = (req.contact_email || "").toLowerCase();
+        const search = searchTerm.toLowerCase();
+        
+        const matchesSearch = companyName.includes(search) || contactEmail.includes(search);
         return matchesFilter && matchesSearch;
     });
 
@@ -132,7 +123,7 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
                             key={status}
                             onClick={() => setFilter(status)}
                             className={`px-4 py-2 rounded-lg font-bold transition-colors ${filter === status
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'        
                                 : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
@@ -170,10 +161,10 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
                                     Contact
                                 </th>
                                 <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Vehicle Preference
-                                </th>
-                                <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Status
+                                </th>
+                                <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Date
                                 </th>
                                 <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     Actions
@@ -201,15 +192,15 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
                                         <td className="px-8 py-6 whitespace-nowrap">
                                             {getStatusBadge(request.status)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs font-semibold">
-                                            {new Date(request.created_at).toLocaleDateString()}
+                                        <td className="px-8 py-6 whitespace-nowrap text-slate-500 text-xs font-semibold">
+                                            {new Date(request.created_at).toLocaleDateString()}    
                                         </td>
                                         <td className="px-8 py-6 whitespace-nowrap">
                                             <div className="flex gap-2">
                                                 {request.status === 'PENDING' && (
                                                     <>
                                                         <button
-                                                            onClick={() => handleApprove(request)}
+                                                            onClick={() => handleApprove(request)} 
                                                             className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors"
                                                         >
                                                             Approve
@@ -223,7 +214,7 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
                                                     </>
                                                 )}
                                                 <button
-                                                    onClick={() => setSelectedRequest(request)}
+                                                    onClick={() => setSelectedRequest(request)}    
                                                     className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors"
                                                 >
                                                     View
@@ -238,166 +229,177 @@ export default function B2BRequestsList({ requests = [], onUpdate }) {
                 </div>
             </div>
 
-            {/* Approval Modal */}
-            {showApproveModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}>
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900">Approve Request</h3>
-                                <p className="text-sm text-slate-500">Enter company details to finalize registration</p>
-                            </div>
-                            <button
-                                onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}
-                                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Company Address</label>
-                                <textarea
-                                    value={approveDetails.address}
-                                    onChange={(e) => setApproveDetails({ ...approveDetails, address: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                                    placeholder="Full office address"
-                                    rows="3"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+            {/* Modals Container */}
+            <AnimatePresence>
+                {/* Approval Modal */}
+                {showApproveModal && selectedRequest && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" onClick={() => { if(!processing) { setShowApproveModal(false); setSelectedRequest(null); } }}>  
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">City</label>
-                                    <input
-                                        type="text"
-                                        value={approveDetails.city}
-                                        onChange={(e) => setApproveDetails({ ...approveDetails, city: e.target.value })}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                                        placeholder="City"
-                                    />
+                                    <h3 className="text-xl font-black text-slate-900">Approve Request</h3>
+                                    <p className="text-sm text-slate-500">Enter company details to finalize registration</p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">State</label>
-                                    <input
-                                        type="text"
-                                        value={approveDetails.state}
-                                        onChange={(e) => setApproveDetails({ ...approveDetails, state: e.target.value })}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                                        placeholder="State"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Pincode</label>
-                                <input
-                                    type="text"
-                                    value={approveDetails.pincode}
-                                    onChange={(e) => setApproveDetails({ ...approveDetails, pincode: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                                    placeholder="6-digit Pincode"
-                                />
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
                                 <button
-                                    onClick={() => { setShowApproveModal(false); setSelectedRequest(null); }}
-                                    className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                    onClick={() => { if(!processing) { setShowApproveModal(false); setSelectedRequest(null); } }}
+                                    className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={confirmApproval}
-                                    className="flex-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-                                >
-                                    Confirm Approval
+                                    ✕
                                 </button>
                             </div>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
 
-            {/* Detail Modal */}
-            {selectedRequest && !showApproveModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedRequest(null)}>
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900">Request Details</h3>
-                                <p className="text-sm text-slate-500">Review company information</p>
-                            </div>
-                            <button
-                                onClick={() => setSelectedRequest(null)}
-                                className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <div className="space-y-5">
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500">Company Name</label>
-                                    <div className="text-slate-900 font-bold mt-1">{selectedRequest.company_name}</div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Company Address</label>
+                                    <textarea
+                                        value={approveDetails.address}
+                                        onChange={(e) => setApproveDetails({ ...approveDetails, address: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                        placeholder="Full office address"
+                                        rows="3"
+                                        disabled={processing}
+                                    />
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500">Contact Person</label>
-                                    <div className="text-slate-900 font-bold mt-1">{selectedRequest.contact_name}</div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500">Email</label>
-                                    <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_email}</div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500">Phone</label>
-                                    <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_phone}</div>
-                                </div>
-                            </div>
-
-                            {selectedRequest.message && (
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-2">Message</label>
-                                    <div className="text-slate-700 text-sm">{selectedRequest.message}</div>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-5 items-center">
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Status</label>
-                                    {getStatusBadge(selectedRequest.status)}
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Default Password</label>
-                                    <div className="text-indigo-600 font-mono font-bold bg-indigo-50 px-2 py-1 rounded inline-block text-xs border border-indigo-100">
-                                        UrbanCabz123
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">City</label>
+                                        <input
+                                            type="text"
+                                            value={approveDetails.city}
+                                            onChange={(e) => setApproveDetails({ ...approveDetails, city: e.target.value })}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                            placeholder="City"
+                                            disabled={processing}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">State</label>
+                                        <input
+                                            type="text"
+                                            value={approveDetails.state}
+                                            onChange={(e) => setApproveDetails({ ...approveDetails, state: e.target.value })}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                            placeholder="State"
+                                            disabled={processing}
+                                        />
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Pincode</label>
+                                    <input
+                                        type="text"
+                                        value={approveDetails.pincode}
+                                        onChange={(e) => setApproveDetails({ ...approveDetails, pincode: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                                        placeholder="6-digit Pincode"
+                                        disabled={processing}
+                                    />
+                                </div>
+
+                                <div className="pt-4 flex gap-3">
+                                    <button
+                                        onClick={() => { if(!processing) { setShowApproveModal(false); setSelectedRequest(null); } }}
+                                        className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                        disabled={processing}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmApproval}
+                                        disabled={processing}
+                                        className="flex-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
+                                    >
+                                        {processing ? 'Processing...' : 'Confirm Approval'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Detail Modal */}
+                {selectedRequest && !showApproveModal && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" onClick={() => setSelectedRequest(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900">Request Details</h3>
+                                    <p className="text-sm text-slate-500">Review company information</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedRequest(null)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 rounded-lg"
+                                >
+                                    ✕
+                                </button>
                             </div>
 
-                            {selectedRequest.admin_notes && (
-                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                                    <label className="text-[10px] font-bold uppercase text-yellow-700 block mb-1">Admin Notes</label>
-                                    <div className="text-yellow-800 text-sm">{selectedRequest.admin_notes}</div>
+                            <div className="space-y-5">
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Company Name</label>
+                                        <div className="text-slate-900 font-bold mt-1">{selectedRequest.company_name}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Contact Person</label>
+                                        <div className="text-slate-900 font-bold mt-1">{selectedRequest.contact_name}</div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
-            )}
+
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Email</label>
+                                        <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_email}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500">Phone</label>
+                                        <div className="text-slate-900 font-medium text-sm mt-1">{selectedRequest.contact_phone}</div>
+                                    </div>
+                                </div>
+
+                                {selectedRequest.message && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <label className="text-[10px] font-bold uppercase text-slate-500 block mb-2">Message</label>
+                                        <div className="text-slate-700 text-sm">{selectedRequest.message}</div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-5 items-center">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Status</label>
+                                        {getStatusBadge(selectedRequest.status)}
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Default Password</label>
+                                        <div className="text-indigo-600 font-mono font-bold bg-indigo-50 px-2 py-1 rounded inline-block text-xs border border-indigo-100">
+                                            UrbanCabz123
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedRequest.admin_notes && (
+                                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                                        <label className="text-[10px] font-bold uppercase text-yellow-700 block mb-1">Admin Notes</label>
+                                        <div className="text-yellow-800 text-sm">{selectedRequest.admin_notes}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

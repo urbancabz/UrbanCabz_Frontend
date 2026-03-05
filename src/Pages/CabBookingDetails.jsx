@@ -81,13 +81,13 @@ export default function CabBookingDetails() {
   const isRoundTrip = rideType === "roundtrip";
 
   const basePrice = listing.basePrice ?? 12;
+  const airportBasePrice = listing.airportBasePrice ?? 0;
+  const airportKmIncluded = listing.airportKmIncluded ?? 0;
 
   const calculatePrice = () => {
     if (!distanceKm || !pricingSettings) return { total: 0, billableDistance: 0 };
 
-    let billableDistance = 0;
     const RULE_MIN_KM = 300;
-
     const {
       min_km_threshold,
       min_km_airport_apply,
@@ -95,35 +95,43 @@ export default function CabBookingDetails() {
       min_km_roundtrip_apply
     } = pricingSettings;
 
-    // Check if 300km rule should be applied
-    let applyRule = false;
-    if (distanceKm > min_km_threshold) {
-      if (rideType === "airport" && min_km_airport_apply) applyRule = true;
-      else if (rideType === "oneway" && min_km_oneway_apply) applyRule = true;
-      else if (rideType === "roundtrip" && min_km_roundtrip_apply) applyRule = true;
+    // AIRPORT SPECIAL CASE: Flat rate + extra km beyond threshold
+    if (rideType === "airport" && airportBasePrice > 0) {
+      if (distanceKm > min_km_threshold) {
+        if (min_km_airport_apply) {
+          // Toggle ON: apply 300km min charge
+          const bill = Math.max(RULE_MIN_KM, distanceKm);
+          return { total: Math.round(bill * basePrice), billableDistance: bill };
+        } else {
+          // Toggle OFF: flat rate + extra km beyond threshold
+          const extraKm = distanceKm - min_km_threshold;
+          return { total: Math.round(airportBasePrice + extraKm * basePrice), billableDistance: distanceKm };
+        }
+      }
+      // Under threshold: flat rate only
+      return { total: Math.round(airportBasePrice), billableDistance: distanceKm };
     }
 
-    const effectiveMinKmPerDay = applyRule ? RULE_MIN_KM : 0;
+    let billableDistance = 0;
 
-    if (rideType === "oneway" || rideType === "airport") {
-      billableDistance = Math.max(effectiveMinKmPerDay, distanceKm);
+    if (rideType === "oneway") {
+      // Toggle ON → always 300km min, regardless of distance
+      billableDistance = min_km_oneway_apply ? Math.max(RULE_MIN_KM, distanceKm) : distanceKm;
     } else if (rideType === "roundtrip") {
       let days = 1;
       if (pickupDate && returnDate && pickupDate !== "—" && returnDate !== "—") {
-        const start = new Date(pickupDate);
-        const end = new Date(returnDate);
-        const diffTime = Math.abs(end - start);
+        const diffTime = Math.abs(new Date(returnDate) - new Date(pickupDate));
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         days = diffDays + 1;
       }
-
+      // Toggle ON → 300km × days min (1 day=300, 2 days=600, etc.)
+      const effectiveMinKmPerDay = min_km_roundtrip_apply ? RULE_MIN_KM : 0;
       const baseKm = days * effectiveMinKmPerDay;
       const actualKm = distanceKm * 2;
       billableDistance = Math.max(baseKm, actualKm);
     }
 
-    const pricePerKm = basePrice;
-    const total = Math.round(billableDistance * pricePerKm);
+    const total = Math.round(billableDistance * basePrice);
     return { total, billableDistance };
   };
 
@@ -165,7 +173,7 @@ export default function CabBookingDetails() {
     const result = await createDirectBooking(payload);
 
     if (result.success) {
-      alert("Booking confirmed successfully! (Payment pending by admin)");
+      alert("Booking confirmed successfully! You can pay by Cash to the driver after the trip.");
       navigate("/");
     } else {
       alert(result.message || "Booking failed. Please try again.");
