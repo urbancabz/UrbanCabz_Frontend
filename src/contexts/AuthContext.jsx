@@ -59,7 +59,8 @@ export function AuthProvider({ children }) {
     setLoading(false);
 
     if (result.success && result.data) {
-      persistProfile(result.data);
+      const profileData = result.data.user || result.data;
+      persistProfile(profileData);
     } else if (result.status === 401) {
       logout();
     }
@@ -118,7 +119,8 @@ export function AuthProvider({ children }) {
       setLoading(false);
 
       if (result.success && result.data) {
-        persistProfile(result.data);
+        const profileData = result.data.user || result.data;
+        persistProfile(profileData);
       } else if (result.status === 401) {
         logout();
       } else {
