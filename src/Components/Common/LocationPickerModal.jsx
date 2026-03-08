@@ -79,7 +79,10 @@ export default function LocationPickerModal({
         try {
             const result = await RoutingService.reverseGeocode(lat, lng);
 
-            if (result && result.address) {
+            if (result && result.fullAddress) {
+                setAddress(result.fullAddress);
+                return result.fullAddress;
+            } else if (result && result.address) { // fallback
                 setAddress(result.address);
                 return result.address;
             }
