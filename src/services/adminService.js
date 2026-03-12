@@ -178,6 +178,13 @@ export async function updateCompany(id, payload) {
 }
 
 /**
+ * Toggle Company Active/Deactivate Status
+ */
+export async function toggleCompanyStatus(id) {
+  return apiClient.post(`/b2b/companies/${id}/toggle-status`);
+}
+
+/**
  * Fetch B2C users list
  */
 export async function fetchUsers(search = "", page = 1) {

@@ -83,7 +83,16 @@ export default function CompanyList({ companies = [], onUpdate }) {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900">{company.company_name}</h3>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-lg font-black text-slate-900">
+                                            {company.company_name.replace(/^\[DEACTIVATED\]\s*/i, '')}
+                                        </h3>
+                                        {company.is_active === false && (
+                                            <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded">
+                                                Inactive
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-slate-500 text-xs font-medium">{company.company_email}</p>
                                 </div>
                                 <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
@@ -184,6 +193,9 @@ export default function CompanyList({ companies = [], onUpdate }) {
                 {selectedCompany && (
                     <CompanyDetails
                         company={selectedCompany}
+                        onRefresh={() => {
+                            if (onUpdate) onUpdate();
+                        }}
                         onClose={() => {
                             setSelectedCompany(null);
                             if (onUpdate) onUpdate();

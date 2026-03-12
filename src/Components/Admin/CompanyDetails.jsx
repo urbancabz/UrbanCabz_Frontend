@@ -2,14 +2,17 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CompanyFleetManage from "./CompanyFleetManage";
 import useDragScroll from "../../hooks/useDragScroll";
-import { recordCompanyPayment, updateCompany } from "../../services/adminService";
+import { recordCompanyPayment, updateCompany, toggleCompanyStatus } from "../../services/adminService";
 import { toast } from "react-hot-toast";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api/v1";
 
-export default function CompanyDetails({ company, onClose }) {
+export default function CompanyDetails({ company, onClose, onRefresh }) {
     const { ref: bookingsRef, ...bookingsDrag } = useDragScroll();
     const { ref: paymentsRef, ...paymentsDrag } = useDragScroll();
+
+    // Optimistic UI state for status toggle
+    const [isCompanyActive, setIsCompanyActive] = useState(company.is_active !== false);
 
     const [bookings, setBookings] = useState([]);
     const [payments, setPayments] = useState([]);
@@ -34,9 +37,14 @@ export default function CompanyDetails({ company, onClose }) {
     const [paymentNote, setPaymentNote] = useState("");
     const [paymentLoading, setPaymentLoading] = useState(false);
 
+    // Toggle Status State
+    const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
     useEffect(() => {
         loadCompanyData();
-    }, [company.id]);
+        // Fallback: If it's not explicitly false, assume it's active
+        setIsCompanyActive(company.is_active !== false);
+    }, [company.id, company.is_active]);
 
     const loadCompanyData = async () => {
         setLoading(true);
@@ -112,9 +120,41 @@ export default function CompanyDetails({ company, onClose }) {
         if (res.success) {
             toast.success("Company details updated");
             setShowEditModal(false);
-            onClose();
+            onClose(); // Parent component should re-fetch to show changes
         } else {
             toast.error(res.message || "Failed to update company");
+        }
+    };
+    const handleToggleStatus = async () => {
+        const actionText = isCompanyActive ? 'deactivate' : 'activate';
+        
+        if (!window.confirm(`Are you sure you want to ${actionText} this company?`)) return;
+
+        // Optimistic UI Update: Instantly flip the button state
+        const originalState = isCompanyActive;
+        setIsCompanyActive(!originalState);
+        setIsTogglingStatus(true);
+        
+        try {
+            const res = await toggleCompanyStatus(company.id);
+            if (res.success) {
+                // Use the server's response as the final source of truth
+                const serverState = res.data?.is_active !== false;
+                setIsCompanyActive(serverState);
+                toast.success(`Company ${serverState ? 'activated' : 'deactivated'} successfully`);
+                // Refresh the parent list so the CompanyList cards also update
+                if (onRefresh) onRefresh();
+            } else {
+                // Revert on failure
+                setIsCompanyActive(originalState);
+                toast.error(res.message || `Failed to ${actionText} company`);
+            }
+        } catch (error) {
+            console.error(`Toggle Status Error:`, error);
+            setIsCompanyActive(originalState);
+            toast.error("An error occurred");
+        } finally {
+            setIsTogglingStatus(false);
         }
     };
 
@@ -192,7 +232,9 @@ export default function CompanyDetails({ company, onClose }) {
                             {company.company_name?.[0] || '?'}
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{company.company_name}</h2>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                                {company.company_name.replace(/^\[DEACTIVATED\]\s*/i, '')}
+                            </h2>
                             <div className="flex gap-4 mt-1 text-sm font-medium text-slate-500">
                                 <span>📧 {company.company_email}</span>
                                 <span>📞 {company.company_phone}</span>
@@ -218,6 +260,27 @@ export default function CompanyDetails({ company, onClose }) {
                         >
                             ✏️ Edit Details
                         </button>
+                        {/* Status Toggle Slider */}
+                        <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                            <span className={`text-xs font-black uppercase tracking-widest ${isCompanyActive ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                {isCompanyActive ? 'Active' : 'Deactivated'}
+                            </span>
+                            <button
+                                onClick={handleToggleStatus}
+                                disabled={isTogglingStatus}
+                                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                    isCompanyActive ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-300 hover:bg-slate-400'
+                                } ${isTogglingStatus ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                title={`Click to ${isCompanyActive ? 'Deactivate' : 'Activate'} Company`}
+                            >
+                                <span className="sr-only">Toggle company status</span>
+                                <span
+                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                                        isCompanyActive ? 'translate-x-7' : 'translate-x-1'
+                                    }`}
+                                />
+                            </button>
+                        </div>
                         <button onClick={onClose} className="p-3 text-slate-400 hover:text-slate-600 transition-colors">
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />

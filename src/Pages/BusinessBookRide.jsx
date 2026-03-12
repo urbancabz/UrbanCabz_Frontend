@@ -23,9 +23,8 @@ export default function BusinessBookRide() {
         if (location.state && location.state.from && location.state.to) {
             setSearchData(location.state);
 
-            // If we have prefetched data, use it immediately
-            if (location.state.prefetchedFleet && location.state.prefetchedPricing) {
-                setFleet(location.state.prefetchedFleet);
+            // ALWAYS fetch fresh fleet for B2B to avoid stale browser history state bugs
+            if (location.state.prefetchedPricing) {
                 setPricingSettings(location.state.prefetchedPricing);
             }
 
@@ -200,6 +199,7 @@ export default function BusinessBookRide() {
                                     } else {
                                         finalPrice = Math.round(dist * rate);
                                     }
+
                                     return (
                                         <div key={vehicle.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 hover:border-yellow-500/50 transition-all">
                                             <div className="w-full sm:w-48 h-32 bg-neutral-800 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center">
