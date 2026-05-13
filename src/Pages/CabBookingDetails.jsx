@@ -23,6 +23,14 @@ const bookingSchema = yup.object().shape({
     .required("Phone is required")
     .matches(/^\d{10}$/, "Please enter a valid 10-digit mobile number"),
   email: yup.string().email("Invalid email format").required("Email is required"),
+  idCardNumber: yup.string()
+    .required("Aadhaar Card Number is required")
+    .test("is-valid-aadhaar", "Please enter a valid 12-digit Aadhaar Card Number", (value) => {
+      if (!value) return false;
+      const digits = value.replace(/\s/g, '');
+      return /^\d{12}$/.test(digits);
+    }),
+  fullPickupAddress: yup.string().required("Full pickup address is required"),
 });
 
 export default function CabBookingDetails() {
@@ -42,6 +50,8 @@ export default function CabBookingDetails() {
       name: user?.name || user?.fullName || "",
       phone: formattedPhone,
       email: user?.email || "",
+      idCardNumber: "",
+      fullPickupAddress: "",
       remarks: ""
     };
   });
@@ -61,6 +71,9 @@ export default function CabBookingDetails() {
 
     if (field === "phone") {
       newValue = newValue.replace(/[^\d]/g, "").slice(0, 10);
+    } else if (field === "idCardNumber") {
+      const digits = newValue.replace(/\D/g, "").slice(0, 12);
+      newValue = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
     }
 
     setPassengerDetails(prev => ({ ...prev, [field]: newValue }));
@@ -228,7 +241,7 @@ export default function CabBookingDetails() {
 
           {/* Right: payment summary (floats on large screens) */}
           <aside className="lg:sticky lg:top-28">
-            <BookingDetailsSidebar price={price} onBookNow={onBookNow} />
+            <BookingDetailsSidebar price={price} distanceKm={billableDistance} onBookNow={onBookNow} />
           </aside>
         </div>
       </div>

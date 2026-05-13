@@ -118,6 +118,18 @@ export default function B2BBookingDetailView({
                         </div>
                     </div>
 
+                    {/* Passenger Details (if any) */}
+                    {(booking.id_card_number || booking.passenger_name || booking.remarks) && (
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Passenger Details</span>
+                            {booking.passenger_name && <p className="text-sm text-slate-700"><strong>Name:</strong> {booking.passenger_name}</p>}
+                            {booking.passenger_phone && <p className="text-sm text-slate-700"><strong>Phone:</strong> {booking.passenger_phone}</p>}
+                            {booking.id_card_number && <p className="text-sm text-slate-700"><strong>Aadhaar Card:</strong> <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200">{booking.id_card_number}</span></p>}
+                            {booking.full_pickup_address && <p className="text-sm text-slate-700"><strong>Full Pickup Address:</strong> {booking.full_pickup_address}</p>}
+                            {booking.remarks && <p className="text-xs text-slate-500 mt-2 italic">"{booking.remarks}"</p>}
+                        </div>
+                    )}
+
                     {/* Route */}
                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
                         <div className="flex items-start gap-3">
@@ -200,6 +212,7 @@ export default function B2BBookingDetailView({
                                             `*Customer:* ${booking.passenger_details?.name || "Employee"}\n` +
                                             `*Contact:* ${booking.passenger_details?.phone}\n\n` +
                                             `*Pickup:* ${booking.pickup_location}\n` +
+                                            (booking.full_pickup_address ? `*Full Address:* ${booking.full_pickup_address}\n` : "") +
                                             `*Drop:* ${booking.drop_location}\n` +
                                             `*Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
                                             `Please ensure a timely pickup. Drive safely.`

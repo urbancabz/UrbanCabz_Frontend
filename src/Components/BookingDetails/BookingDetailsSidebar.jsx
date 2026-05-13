@@ -1,7 +1,7 @@
 // src/Components/BookingDetails/BookingDetailsSidebar.jsx
 import React from "react";
 
-export default function BookingDetailsSidebar({ price = 0, onBookNow = () => { } }) {
+export default function BookingDetailsSidebar({ price = 0, distanceKm = 0, onBookNow = () => { } }) {
   const formatAmount = (amount) => (amount > 0 ? `₹${amount.toLocaleString()}` : "—");
 
   return (
@@ -21,6 +21,9 @@ export default function BookingDetailsSidebar({ price = 0, onBookNow = () => { }
           <div className="text-center py-2">
             <p className="text-xs text-slate-500 mb-1">Estimated Fare</p>
             <p className="text-4xl font-black text-slate-900 font-mono tracking-tight">{formatAmount(price)}</p>
+            {distanceKm > 0 && (
+                <p className="text-sm font-bold text-slate-600 mt-1">Est. Distance: {distanceKm} km</p>
+            )}
             <p className="text-xs text-slate-500 mt-2">Payment to be made after confirmation</p>
           </div>
 

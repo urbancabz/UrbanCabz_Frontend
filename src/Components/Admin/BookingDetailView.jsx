@@ -118,6 +118,18 @@ export default function BookingDetailView({
                         </div>
                     </div>
 
+                    {/* Passenger Details (if any) */}
+                    {(booking.id_card_number || booking.passenger_name || booking.remarks) && (
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Passenger Details</span>
+                            {booking.passenger_name && <p className="text-sm text-slate-700"><strong>Name:</strong> {booking.passenger_name}</p>}
+                            {booking.passenger_phone && <p className="text-sm text-slate-700"><strong>Phone:</strong> {booking.passenger_phone}</p>}
+                            {booking.id_card_number && <p className="text-sm text-slate-700"><strong>Aadhaar Card:</strong> <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200">{booking.id_card_number}</span></p>}
+                            {booking.full_pickup_address && <p className="text-sm text-slate-700"><strong>Full Pickup Address:</strong> {booking.full_pickup_address}</p>}
+                            {booking.remarks && <p className="text-xs text-slate-500 mt-2 italic">"{booking.remarks}"</p>}
+                        </div>
+                    )}
+
                     {/* Route */}
                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
                         <div className="flex items-start gap-3">
@@ -138,10 +150,16 @@ export default function BookingDetailView({
                     </div>
 
                     {/* Financial Summary */}
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Total Trip Fare</span>
-                        <p className="text-2xl font-black text-slate-900">₹{total}</p>
-                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter italic">Payable by Cash/UPI to Driver</p>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center flex flex-col justify-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Total Trip Fare</span>
+                            <p className="text-xl font-black text-slate-900">₹{total}</p>
+                            <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-tighter italic">Payable to Driver</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center flex flex-col justify-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Est. Distance</span>
+                            <p className="text-xl font-black text-slate-900">{booking.distance_km || 0} km</p>
+                        </div>
                     </div>
 
                     {/* Action Buttons */}
@@ -210,6 +228,7 @@ export default function BookingDetailView({
                                             `*Customer:* ${booking.user?.name || "Guest"}\n` +
                                             `*Contact:* ${booking.user?.phone || "N/A"}\n\n` +
                                             `*Pickup:* ${booking.pickup_location}\n` +
+                                            (booking.full_pickup_address ? `*Full Address:* ${booking.full_pickup_address}\n` : "") +
                                             `*Drop:* ${booking.drop_location}\n` +
                                             `*Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
                                             `Please ensure a timely pickup. Drive safely.`

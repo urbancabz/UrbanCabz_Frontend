@@ -29,6 +29,8 @@ export default function BusinessBookingDetails() {
         name: user?.name || user?.fullName || "",
         phone: getInitialPhone(),
         email: user?.email || "",
+        idCardNumber: "",
+        fullPickupAddress: "",
         remarks: ""
     });
 
@@ -39,6 +41,9 @@ export default function BusinessBookingDetails() {
         let newValue = value;
         if (field === "phone") {
             newValue = newValue.replace(/[^\d]/g, "").slice(0, 10);
+        } else if (field === "idCardNumber") {
+            const digits = newValue.replace(/\D/g, "").slice(0, 12);
+            newValue = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
         }
         setPassengerDetails(prev => ({ ...prev, [field]: newValue }));
         if (formErrors[field]) {
@@ -53,6 +58,9 @@ export default function BusinessBookingDetails() {
         else if (!/^\d{10}$/.test(passengerDetails.phone.replace(/\D/g, ''))) errors.phone = "Invalid phone number (10 digits required)";
         if (!passengerDetails.email.trim()) errors.email = "Email is required";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passengerDetails.email)) errors.email = "Invalid email format";
+        if (!passengerDetails.idCardNumber.trim()) errors.idCardNumber = "Aadhaar Card Number is required";
+        else if (!/^\d{12}$/.test(passengerDetails.idCardNumber.replace(/\D/g, ''))) errors.idCardNumber = "Invalid Aadhaar Card Number (12 digits required)";
+        if (!passengerDetails.fullPickupAddress.trim()) errors.fullPickupAddress = "Full pickup address is required";
 
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -210,19 +218,51 @@ export default function BusinessBookingDetails() {
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-gray-400">Email Address</label>
+                                        <div className="relative">
+                                            <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                                            <input
+                                                type="email"
+                                                value={passengerDetails.email}
+                                                onChange={(e) => handleFormChange("email", e.target.value)}
+                                                className={`w-full bg-white/5 border ${formErrors.email ? 'border-red-500' : 'border-white/10'} rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:border-yellow-400 transition`}
+                                                placeholder="john@company.com"
+                                            />
+                                        </div>
+                                        {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-gray-400">Aadhaar Card Number</label>
+                                        <div className="relative">
+                                            <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                                            <input
+                                                type="text"
+                                                maxLength="14"
+                                                value={passengerDetails.idCardNumber}
+                                                onChange={(e) => handleFormChange("idCardNumber", e.target.value)}
+                                                className={`w-full bg-white/5 border ${formErrors.idCardNumber ? 'border-red-500' : 'border-white/10'} rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:border-yellow-400 transition`}
+                                                placeholder="12-digit Aadhaar Number"
+                                            />
+                                        </div>
+                                        {formErrors.idCardNumber && <p className="text-xs text-red-500">{formErrors.idCardNumber}</p>}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400">Email Address</label>
+                                    <label className="text-sm text-gray-400">Full Pickup Address (House No, Flat, Landmark)</label>
                                     <div className="relative">
-                                        <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                                        <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                                         <input
-                                            type="email"
-                                            value={passengerDetails.email}
-                                            onChange={(e) => handleFormChange("email", e.target.value)}
-                                            className={`w-full bg-white/5 border ${formErrors.email ? 'border-red-500' : 'border-white/10'} rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:border-yellow-400 transition`}
-                                            placeholder="john@company.com"
+                                            type="text"
+                                            value={passengerDetails.fullPickupAddress}
+                                            onChange={(e) => handleFormChange("fullPickupAddress", e.target.value)}
+                                            className={`w-full bg-white/5 border ${formErrors.fullPickupAddress ? 'border-red-500' : 'border-white/10'} rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:border-yellow-400 transition`}
+                                            placeholder="Eg: Flat 204, Building Name, Near Landmark"
                                         />
                                     </div>
-                                    {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+                                    {formErrors.fullPickupAddress && <p className="text-xs text-red-500">{formErrors.fullPickupAddress}</p>}
                                 </div>
 
                                 <div className="space-y-2">

@@ -303,6 +303,39 @@ export default function BookingDetailsMain({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">
+                Aadhaar Card Number
+              </label>
+              <input
+                placeholder="12-digit Aadhaar Number"
+                maxLength="14"
+                value={formData?.idCardNumber || ""}
+                onChange={(e) => onFormChange("idCardNumber", e.target.value)}
+                className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${formErrors.idCardNumber ? "border-red-500" : "border-slate-200"}`}
+              />
+              {formErrors.idCardNumber && (
+                <p className="mt-1 text-xs text-red-500">{formErrors.idCardNumber}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Full Pickup Address (House No, Flat, Landmark)
+              </label>
+              <input
+                placeholder="Eg: Flat 204, Building Name, Near Landmark"
+                value={formData?.fullPickupAddress || ""}
+                onChange={(e) => onFormChange("fullPickupAddress", e.target.value)}
+                className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${formErrors.fullPickupAddress ? "border-red-500" : "border-slate-200"}`}
+              />
+              {formErrors.fullPickupAddress && (
+                <p className="mt-1 text-xs text-red-500">{formErrors.fullPickupAddress}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
                 Remark (optional)
               </label>
               <input
