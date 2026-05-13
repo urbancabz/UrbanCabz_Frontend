@@ -336,6 +336,20 @@ export default function BookingDetailsMain({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">
+                Full Drop Address (House No, Flat, Landmark)
+              </label>
+              <input
+                placeholder="Eg: Hotel Name, Office Address, Near Landmark"
+                value={formData?.fullDropAddress || ""}
+                onChange={(e) => onFormChange("fullDropAddress", e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
                 Remark (optional)
               </label>
               <input

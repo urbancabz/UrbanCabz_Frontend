@@ -126,6 +126,7 @@ export default function B2BBookingDetailView({
                             {booking.passenger_phone && <p className="text-sm text-slate-700"><strong>Phone:</strong> {booking.passenger_phone}</p>}
                             {booking.id_card_number && <p className="text-sm text-slate-700"><strong>Aadhaar Card:</strong> <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200">{booking.id_card_number}</span></p>}
                             {booking.full_pickup_address && <p className="text-sm text-slate-700"><strong>Full Pickup Address:</strong> {booking.full_pickup_address}</p>}
+                            {booking.full_drop_address && <p className="text-sm text-slate-700"><strong>Full Drop Address:</strong> {booking.full_drop_address}</p>}
                             {booking.remarks && <p className="text-xs text-slate-500 mt-2 italic">"{booking.remarks}"</p>}
                         </div>
                     )}
@@ -212,8 +213,9 @@ export default function B2BBookingDetailView({
                                             `*Customer:* ${booking.passenger_details?.name || "Employee"}\n` +
                                             `*Contact:* ${booking.passenger_details?.phone}\n\n` +
                                             `*Pickup:* ${booking.pickup_location}\n` +
-                                            (booking.full_pickup_address ? `*Full Address:* ${booking.full_pickup_address}\n` : "") +
+                                            (booking.full_pickup_address ? `*Full Pickup Address:* ${booking.full_pickup_address}\n` : "") +
                                             `*Drop:* ${booking.drop_location}\n` +
+                                            (booking.full_drop_address ? `*Full Drop Address:* ${booking.full_drop_address}\n` : "") +
                                             `*Time:* ${new Date(booking.scheduled_at || booking.created_at).toLocaleString('en-IN')}\n\n` +
                                             `Please ensure a timely pickup. Drive safely.`
                                         );

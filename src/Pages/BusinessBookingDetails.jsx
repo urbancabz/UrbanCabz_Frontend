@@ -31,6 +31,7 @@ export default function BusinessBookingDetails() {
         email: user?.email || "",
         idCardNumber: "",
         fullPickupAddress: "",
+        fullDropAddress: "",
         remarks: ""
     });
 
@@ -263,6 +264,20 @@ export default function BusinessBookingDetails() {
                                         />
                                     </div>
                                     {formErrors.fullPickupAddress && <p className="text-xs text-red-500">{formErrors.fullPickupAddress}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm text-gray-400">Full Drop Address (Hotel, Office, Landmark)</label>
+                                    <div className="relative">
+                                        <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            value={passengerDetails.fullDropAddress}
+                                            onChange={(e) => handleFormChange("fullDropAddress", e.target.value)}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:border-yellow-400 transition"
+                                            placeholder="Eg: Hotel Name, Office, Near Landmark"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
